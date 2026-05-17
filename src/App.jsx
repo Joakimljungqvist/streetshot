@@ -90,8 +90,8 @@ export default function App() {
     game.current.player.shootAnim = 0;
     game.current.hoop.x = 200;
     game.current.hoop.y = 90;
-    game.current.hoop.speed = 0.4;
-    game.current.hoop.yspeed = 0.15;
+    game.current.hoop.speed = 0.3;
+    game.current.hoop.yspeed = 0.1;
     game.current.hoop.ydir = 1;
     game.current.fallingBalls = [];
     game.current.shotBall = null;
@@ -190,9 +190,9 @@ export default function App() {
       game.current.frame++;
       const F = game.current.frame;
       const difficulty = Math.min(1, F / 7200); // ramp over 120 sec
-      game.current.hoop.speed = 0.4 + difficulty * 1.2;
-      game.current.hoop.yspeed = 0.15 + difficulty * 0.5;
-      const ballInterval = Math.max(30, 75 - difficulty * 35);
+      game.current.hoop.speed = 0.3 + difficulty * 0.8;
+      game.current.hoop.yspeed = 0.1 + difficulty * 0.35;
+      const ballInterval = Math.max(80, 150 - difficulty * 70);
 
       // ── UNDERGROUND TUNNEL BACKGROUND ──
       // Deep tunnel gradient (dark to lit)
@@ -384,12 +384,12 @@ export default function App() {
         game.current.fallingBalls.push({
           x: fromLeft ? 20 : W - 20,
           y: -20 + Math.random() * 40,
-          vx: fromLeft ? (1.5 + Math.random() * 2) : -(1.5 + Math.random() * 2),
-          vy: 0.5 + Math.random() * 0.5 + difficulty * 0.8,
+          vx: fromLeft ? (0.8 + Math.random() * 1.2) : -(0.8 + Math.random() * 1.2),
+          vy: 0.2 + Math.random() * 0.3 + difficulty * 0.5,
           rot: 0,
-          rotSpeed: (Math.random() - 0.5) * 0.12,
+          rotSpeed: (Math.random() - 0.5) * 0.1,
         });
-        game.current.nextBallTime = F + ballInterval + Math.random() * 10;
+        game.current.nextBallTime = F + ballInterval + Math.random() * 15;
       }
 
       // Update falling balls - with bouncing physics
@@ -752,7 +752,7 @@ export default function App() {
                 onMouseUp={()=>game.current.keys.left=false}
                 onMouseLeave={()=>game.current.keys.left=false}
                 style={S.moveBtn}>◀</button>
-              <button onClick={shoot} onTouchStart={(e)=>{ e.preventDefault(); shoot(); }} style={S.shootBtn}>🏀 SHOOT</button>
+              <button onClick={shoot} onTouchStart={(e)=>{ e.preventDefault(); shoot(); }} style={S.shootBtn}>🏀</button>
               <button
                 onTouchStart={(e)=>{ e.preventDefault(); game.current.keys.right=true; }}
                 onTouchEnd={(e)=>{ e.preventDefault(); game.current.keys.right=false; }}
@@ -770,11 +770,11 @@ export default function App() {
 }
 
 const S = {
-  root: { minHeight: "100vh", background: "linear-gradient(180deg, #0a0a0a 0%, #1a1018 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 12, fontFamily: "'DM Sans', sans-serif", color: "#fff" },
-  container: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 },
-  header: { textAlign: "center", marginBottom: 4, lineHeight: 0.85 },
-  logoStreet: { fontFamily: "'Bebas Neue', cursive", fontSize: 38, color: "#fff", letterSpacing: 4, textShadow: "3px 3px 0 #000" },
-  logoShot: { fontFamily: "'Bebas Neue', cursive", fontSize: 50, color: "#f97316", letterSpacing: 6, textShadow: "3px 3px 0 #000", marginTop: -6 },
+  root: { minHeight: "100vh", maxHeight: "100vh", overflow: "hidden", background: "linear-gradient(180deg, #0a0a0a 0%, #1a1018 100%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6px 8px", fontFamily: "'DM Sans', sans-serif", color: "#fff" },
+  container: { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, height: "100vh" },
+  header: { textAlign: "center", marginBottom: 2, lineHeight: 0.85 },
+  logoStreet: { fontFamily: "'Bebas Neue', cursive", fontSize: 26, color: "#fff", letterSpacing: 3, textShadow: "2px 2px 0 #000" },
+  logoShot: { fontFamily: "'Bebas Neue', cursive", fontSize: 36, color: "#f97316", letterSpacing: 5, textShadow: "2px 2px 0 #000", marginTop: -4 },
   menu: { width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "20px 10px" },
   hsBox: { background: "#111", border: "1px solid #333", borderRadius: 4, padding: "12px 24px", textAlign: "center", minWidth: 200 },
   hsLabel: { fontSize: 10, color: "#666", letterSpacing: 3, fontWeight: 700, marginBottom: 4 },
@@ -787,15 +787,16 @@ const S = {
   statLabel: { fontSize: 11, color: "#888", letterSpacing: 2, fontWeight: 700 },
   statValue: { fontFamily: "'Bebas Neue', cursive", fontSize: 24, color: "#fff" },
   newHs: { textAlign: "center", marginTop: 10, fontFamily: "'Bebas Neue', cursive", fontSize: 18, color: "#4ade80", letterSpacing: 2 },
-  hud: { width: "100%", display: "flex", justifyContent: "space-between", padding: "0 8px", alignItems: "center" },
-  hudLabel: { fontSize: 9, color: "#666", letterSpacing: 2, fontWeight: 700 },
-  hudScore: { fontFamily: "'Bebas Neue', cursive", fontSize: 30, color: "#f97316", lineHeight: 1 },
-  hudCombo: { fontFamily: "'Bebas Neue', cursive", fontSize: 26, lineHeight: 1 },
+  hud: { width: "100%", display: "flex", justifyContent: "space-between", padding: "0 8px", alignItems: "center", marginBottom: 2 },
+  hudLabel: { fontSize: 8, color: "#666", letterSpacing: 2, fontWeight: 700 },
+  hudScore: { fontFamily: "'Bebas Neue', cursive", fontSize: 22, color: "#f97316", lineHeight: 1 },
+  hudTime: { fontFamily: "'Bebas Neue', cursive", fontSize: 22, lineHeight: 1 },
+  hudCombo: { fontFamily: "'Bebas Neue', cursive", fontSize: 20, lineHeight: 1 },
   misses: { display: "flex", gap: 2, justifyContent: "center", marginTop: 3 },
-  canvas: { width: "100%", maxWidth: 400, aspectRatio: "400/600", background: "#000", border: "2px solid #222", borderRadius: 4, touchAction: "none", cursor: "pointer" },
+  canvas: { width: "100%", maxWidth: 400, flex: 1, minHeight: 0, maxHeight: "60vh", aspectRatio: "400/600", background: "#000", border: "2px solid #222", borderRadius: 4, touchAction: "none", cursor: "pointer", objectFit: "contain" },
   feedback: { position: "fixed", top: "45%", left: "50%", fontFamily: "'Bebas Neue', cursive", fontSize: 40, letterSpacing: 3, textShadow: "3px 3px 0 #000", pointerEvents: "none", animation: "pop 0.6s ease-out", zIndex: 10 },
-  mobileControls: { width: "100%", display: "flex", gap: 8, marginTop: 4 },
-  moveBtn: { flex: 1, background: "#1a1a1a", border: "2px solid #333", color: "#fff", padding: "22px 0", fontSize: 26, fontWeight: 900, borderRadius: 4, cursor: "pointer" },
-  shootBtn: { flex: 2, background: "#f97316", border: "none", color: "#000", padding: "22px 0", fontFamily: "'Bebas Neue', cursive", fontSize: 22, fontWeight: 900, letterSpacing: 2, borderRadius: 4, cursor: "pointer", boxShadow: "0 3px 0 #c25510" },
-  hint: { fontSize: 11, color: "#555", letterSpacing: 1, marginTop: 2 },
+  mobileControls: { width: "100%", display: "flex", gap: 10, marginTop: 12, padding: "0 4px" },
+  moveBtn: { flex: 1, background: "#1a1a1a", border: "2px solid #444", color: "#fff", padding: "32px 0", fontSize: 36, fontWeight: 900, borderRadius: 8, cursor: "pointer" },
+  shootBtn: { flex: 1.5, background: "#f97316", border: "none", color: "#000", padding: "32px 0", fontFamily: "'Bebas Neue', cursive", fontSize: 36, fontWeight: 900, letterSpacing: 2, borderRadius: 8, cursor: "pointer", boxShadow: "0 4px 0 #c25510" },
+  hint: { fontSize: 10, color: "#555", letterSpacing: 1, marginTop: 0 },
 };
