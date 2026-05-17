@@ -419,11 +419,11 @@ export default function App() {
           playSound("bounce_soft");
         }
         
-        // Bounce off ground - bouncy with low friction
+        // Bounce off ground - realistic energy loss
         if (b.y > 540) {
           b.y = 540;
-          b.vy = -Math.abs(b.vy) * 0.9;
-          b.vx *= 0.98;
+          b.vy = -Math.abs(b.vy) * 0.55;
+          b.vx *= 0.92;
           if (Math.abs(b.vy) < 1.0) {
             // Ball lost energy, count as miss and remove
             game.current.fallingBalls.splice(i, 1);
@@ -649,12 +649,12 @@ export default function App() {
         }
         // MISS - convert to bouncing ball so player can catch it again!
         else if (sb.y > 540) {
-          // Ball hit the ground - convert to bouncing ball
+          // Ball hit the ground - convert to bouncing ball with realistic bounce
           game.current.fallingBalls.push({
             x: sb.x,
             y: 540,
-            vx: sb.vx * 0.9,
-            vy: -Math.abs(sb.vy) * 0.85,
+            vx: sb.vx * 0.8,
+            vy: -Math.abs(sb.vy) * 0.5,
             rot: 0,
             rotSpeed: (Math.random() - 0.5) * 0.15,
           });
