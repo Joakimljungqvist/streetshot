@@ -422,9 +422,9 @@ export default function App() {
         // Bounce off ground - realistic energy loss
         if (b.y > 540) {
           b.y = 540;
-          b.vy = -Math.abs(b.vy) * 0.55;
-          b.vx *= 0.92;
-          if (Math.abs(b.vy) < 1.0) {
+          b.vy = -Math.abs(b.vy) * 0.4;
+          b.vx *= 0.85;
+          if (Math.abs(b.vy) < 1.2) {
             // Ball lost energy, count as miss and remove
             game.current.fallingBalls.splice(i, 1);
             playSound("drop");
