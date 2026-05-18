@@ -22,6 +22,8 @@ export default function App() {
   const [started, setStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [musicOn, setMusicOn] = useState(true);
+  const musicCtxRef = useRef(null);
 
   const game = useRef({
     player: { x: 200, y: 500, facing: 0, walkCycle: 0, shootAnim: 0, dribbleBall: { y: 540, vy: 0, side: 1 } },
@@ -45,12 +47,23 @@ export default function App() {
       osc.connect(gain);
       gain.connect(ctx.destination);
       if (type === "swish") {
-        osc.frequency.value = 700;
-        osc.frequency.exponentialRampToValueAtTime(1100, ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        // Whoosh + ding for swish
+        osc.frequency.value = 800;
+        osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
         osc.start();
-        osc.stop(ctx.currentTime + 0.25);
+        osc.stop(ctx.currentTime + 0.35);
+        // Add a bell-like overtone
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.value = 1600;
+        gain2.gain.setValueAtTime(0.15, ctx.currentTime + 0.05);
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc2.start(ctx.currentTime + 0.05);
+        osc2.stop(ctx.currentTime + 0.4);
       } else if (type === "catch") {
         osc.frequency.value = 200;
         gain.gain.setValueAtTime(0.04, ctx.currentTime);
@@ -78,6 +91,86 @@ export default function App() {
       }
     } catch(e) {}
   };
+
+  // Lo-fi background music (chill chord loop)
+  useEffect(() => {
+    if (!started || !musicOn) {
+      if (musicCtxRef.current) {
+        try { musicCtxRef.current.close(); } catch(e) {}
+        musicCtxRef.current = null;
+      }
+      return;
+    }
+    
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    musicCtxRef.current = ctx;
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0.06;
+    masterGain.connect(ctx.destination);
+    
+    const chords = [
+      [220.00, 261.63, 329.63],
+      [164.81, 196.00, 246.94],
+      [174.61, 220.00, 261.63],
+      [130.81, 164.81, 196.00],
+    ];
+    const bass = [110, 82.4, 87.3, 65.4];
+    
+    let chordIdx = 0;
+    let stopped = false;
+    let timeoutId = null;
+    
+    const playChord = () => {
+      if (stopped || ctx.state === "closed") return;
+      const now = ctx.currentTime;
+      const chord = chords[chordIdx % chords.length];
+      const bassNote = bass[chordIdx % bass.length];
+      
+      chord.forEach((freq) => {
+        try {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          osc.connect(g);
+          g.connect(masterGain);
+          g.gain.setValueAtTime(0, now);
+          g.gain.linearRampToValueAtTime(0.3, now + 0.5);
+          g.gain.linearRampToValueAtTime(0.2, now + 3);
+          g.gain.linearRampToValueAtTime(0, now + 3.8);
+          osc.start(now);
+          osc.stop(now + 4);
+        } catch(e) {}
+      });
+      
+      try {
+        const bassOsc = ctx.createOscillator();
+        const bassG = ctx.createGain();
+        bassOsc.type = "triangle";
+        bassOsc.frequency.value = bassNote;
+        bassOsc.connect(bassG);
+        bassG.connect(masterGain);
+        bassG.gain.setValueAtTime(0, now);
+        bassG.gain.linearRampToValueAtTime(0.4, now + 0.1);
+        bassG.gain.linearRampToValueAtTime(0.3, now + 1);
+        bassG.gain.linearRampToValueAtTime(0, now + 1.8);
+        bassOsc.start(now);
+        bassOsc.stop(now + 2);
+      } catch(e) {}
+      
+      chordIdx++;
+      timeoutId = setTimeout(playChord, 3800);
+    };
+    
+    playChord();
+    
+    return () => {
+      stopped = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      try { ctx.close(); } catch(e) {}
+      musicCtxRef.current = null;
+    };
+  }, [started, musicOn]);
 
   const startGame = () => {
     setScore(0);
@@ -1361,14 +1454,18 @@ export default function App() {
         ctx.restore();
         const dx2 = sb.x - hx;
         const dy2 = sb.y - hy;
+        // PERFECT - dead center swish (extra reward)
+        const isPerfect = Math.abs(dx2) < 5 && Math.abs(dy2) < 6;
         // SWISH - perfect through center
         if (Math.abs(dx2) < 14 && Math.abs(dy2) < 8 && sb.vy > 0) {
           playSound("swish");
-          setScore(s => s + 3);
+          const points = isPerfect ? 5 : 3;
+          setScore(s => s + points);
           // SWISH particles - golden burst
-          for (let p = 0; p < 25; p++) {
-            const angle = (p / 25) * Math.PI * 2;
-            const speed = 1 + Math.random() * 3;
+          const particleCount = isPerfect ? 40 : 25;
+          for (let p = 0; p < particleCount; p++) {
+            const angle = (p / particleCount) * Math.PI * 2;
+            const speed = 1 + Math.random() * (isPerfect ? 4 : 3);
             game.current.particles.push({
               x: sb.x,
               y: sb.y + 10,
@@ -1382,20 +1479,22 @@ export default function App() {
               b: 50 + Math.random() * 60,
             });
           }
-          game.current.shakeAmount = 8; // Screen shake!
+          game.current.shakeAmount = isPerfect ? 16 : 8;
           setCombo(c => {
             const nc = c + 1;
             game.current.currentCombo = nc;
             setBestCombo(bc => Math.max(bc, nc));
-            if (nc >= 5) {
+            if (isPerfect) {
+              setFeedback({ text: `💥 PERFECT! +${points}`, color: "#facc15" });
+            } else if (nc >= 5) {
               setFeedback({ text: `🔥 ON FIRE! x${nc}`, color: "#facc15" });
-              game.current.shakeAmount = 14; // Bigger shake
+              game.current.shakeAmount = 14;
             } else if (nc >= 3) {
-              setFeedback({ text: `SWISH x${nc} +3`, color: "#facc15" });
+              setFeedback({ text: `SWISH x${nc} +${points}`, color: "#facc15" });
             } else {
-              setFeedback({ text: "SWISH! +3", color: "#4ade80" });
+              setFeedback({ text: `SWISH! +${points}`, color: "#4ade80" });
             }
-            setTimeout(()=>setFeedback(null), 600);
+            setTimeout(()=>setFeedback(null), 700);
             return nc;
           });
           game.current.shotBall = null;
@@ -1606,6 +1705,21 @@ export default function App() {
               <div style={S.hsValue}>{highscore}</div>
             </div>
             <button onClick={startGame} style={S.playBtn}>▶ TAP TO PLAY</button>
+            <button
+              onClick={() => setMusicOn(m => !m)}
+              style={{
+                background: "rgba(0,0,0,0.3)",
+                border: "1px solid #444",
+                color: musicOn ? "#f97316" : "#666",
+                fontSize: 13,
+                padding: "8px 16px",
+                borderRadius: 4,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 700,
+                letterSpacing: 1,
+              }}
+            >{musicOn ? "🎵 MUSIK PÅ" : "🔇 MUSIK AV"}</button>
             <div style={S.tagline}>90 sek! +15s per 5 poäng. SWISH = 3p, RIM = 1p.</div>
           </div>
         )}
@@ -1631,10 +1745,37 @@ export default function App() {
                 <div style={S.hudLabel}>TIME</div>
                 <div style={{...S.hudCombo, color: timeLeft <= 10 ? "#ef4444" : "#fff"}}>{timeLeft}s</div>
               </div>
-              <div style={{textAlign:"right"}}><div style={S.hudLabel}>COMBO</div><div style={{...S.hudCombo, color: combo >= 3 ? "#facc15" : "#fff"}}>x{combo}</div></div>
+              <div style={{textAlign:"right"}}><div style={S.hudLabel}>COMBO</div><div style={{
+                fontFamily: "'Bebas Neue', cursive",
+                fontSize: combo >= 5 ? 38 : combo >= 3 ? 32 : 26,
+                lineHeight: 1,
+                color: combo >= 5 ? "#facc15" : combo >= 3 ? "#fbbf24" : combo >= 1 ? "#fff" : "#666",
+                textShadow: combo >= 5 ? "0 0 12px rgba(252, 211, 77, 0.7), 2px 2px 0 #000" : combo >= 3 ? "0 0 8px rgba(251, 191, 36, 0.5), 1px 1px 0 #000" : "1px 1px 0 #000",
+                transition: "font-size 0.2s",
+              }}>x{combo}</div></div>
             </div>
 
             <canvas ref={canvasRef} width={W} height={H} onClick={shoot} style={S.canvas}/>
+
+            {/* Music toggle */}
+            <button
+              onClick={() => setMusicOn(m => !m)}
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                background: "rgba(0,0,0,0.5)",
+                border: "1px solid #444",
+                color: musicOn ? "#f97316" : "#666",
+                fontSize: 18,
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                cursor: "pointer",
+                zIndex: 5,
+              }}
+              title={musicOn ? "Stäng av musik" : "Sätt på musik"}
+            >{musicOn ? "🎵" : "🔇"}</button>
 
             {feedback && <div style={{...S.feedback, color: feedback.color}}>{feedback.text}</div>}
 
