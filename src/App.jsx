@@ -584,32 +584,52 @@ export default function App() {
       });
       
       // ── PEOPLE IN WINDOWS (silhouettes) ──
-      // Some windows have people silhouettes visible
       const peopleWindows = [
-        { bx: 0, row: 0, col: 1 },   // Person looking out
+        { bx: 0, row: 0, col: 1 },
         { bx: 1, row: 1, col: 0 },
         { bx: 2, row: 0, col: 2 },
         { bx: 3, row: 2, col: 1 },
         { bx: 4, row: 1, col: 2 },
       ];
-      peopleWindows.forEach(({ bx, row, col }) => {
+      peopleWindows.forEach(({ bx, row, col }, idx) => {
         const wx = (bx * 85 - 5) + 12 + col * 22;
         const wy = 178 + row * 28;
-        // Head silhouette
-        ctx.fillStyle = "rgba(20, 10, 5, 0.85)";
+        // Light up the window behind person (warm glow)
+        const windowGlow = ctx.createLinearGradient(wx, wy, wx + 12, wy + 18);
+        windowGlow.addColorStop(0, "rgba(255, 220, 130, 0.95)");
+        windowGlow.addColorStop(1, "rgba(255, 180, 80, 0.85)");
+        ctx.fillStyle = windowGlow;
+        ctx.fillRect(wx, wy, 12, 18);
+        // Glow halo around window
+        ctx.fillStyle = "rgba(255, 220, 130, 0.2)";
+        ctx.fillRect(wx - 2, wy - 2, 16, 22);
+        // Head silhouette (bigger and darker)
+        ctx.fillStyle = "rgba(10, 5, 0, 0.95)";
         ctx.beginPath();
-        ctx.arc(wx + 6, wy + 7, 3, 0, Math.PI * 2);
+        ctx.arc(wx + 6, wy + 6, 4, 0, Math.PI * 2);
         ctx.fill();
-        // Shoulders
-        ctx.fillRect(wx + 3, wy + 10, 6, 7);
+        // Shoulders silhouette (bigger)
+        ctx.fillRect(wx + 1, wy + 10, 10, 8);
+        // Window cross frame (over silhouette)
+        ctx.strokeStyle = "rgba(20, 10, 5, 0.6)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(wx + 6, wy);
+        ctx.lineTo(wx + 6, wy + 18);
+        ctx.stroke();
       });
-      // Subtle movement - one person waving
-      const waveFrame = Math.sin(F * 0.1);
+      // Waving person animation
+      const waveFrame = Math.sin(F * 0.12);
       if (waveFrame > 0) {
         const wpx = (0 * 85 - 5) + 12 + 1 * 22 + 6;
-        const wpy = 178 + 0 * 28 + 7;
-        ctx.fillStyle = "rgba(20, 10, 5, 0.7)";
-        ctx.fillRect(wpx - 4, wpy - 2 - waveFrame * 2, 2, 4);
+        const wpy = 178 + 0 * 28 + 6;
+        // Arm waving up
+        ctx.fillStyle = "rgba(10, 5, 0, 0.95)";
+        ctx.fillRect(wpx - 5, wpy - 4 - waveFrame * 4, 2, 6);
+        // Hand
+        ctx.beginPath();
+        ctx.arc(wpx - 4, wpy - 5 - waveFrame * 4, 1.5, 0, Math.PI * 2);
+        ctx.fill();
       }
       
       // ── YELLOW TAXI CABS in distance ──
