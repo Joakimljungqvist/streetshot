@@ -194,237 +194,501 @@ export default function App() {
       game.current.hoop.yspeed = 0.1 + difficulty * 0.35;
       const ballInterval = Math.max(80, 150 - difficulty * 70);
 
-      // ── UNDERGROUND TUNNEL BACKGROUND ──
-      // Deep tunnel gradient (dark to lit)
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0, "#0a0a12");
-      grad.addColorStop(0.3, "#15151f");
-      grad.addColorStop(0.6, "#1a1a25");
-      grad.addColorStop(0.85, "#252028");
-      grad.addColorStop(1, "#1a1418");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
+      // ── NYC STREET BASKETBALL COURT - DAYTIME (ENHANCED) ──
+      // Sky gradient (warm daylight, more dramatic)
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 280);
+      skyGrad.addColorStop(0, "#6ba8d8");
+      skyGrad.addColorStop(0.4, "#9bc4e2");
+      skyGrad.addColorStop(0.7, "#c8d8e8");
+      skyGrad.addColorStop(1, "#e8d8c0");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, 280);
       
-      // Tunnel ceiling arch (dark vignette at top)
-      const arch = ctx.createRadialGradient(W/2, -50, 50, W/2, -50, 350);
-      arch.addColorStop(0, "rgba(0,0,0,0)");
-      arch.addColorStop(1, "rgba(0,0,0,0.6)");
-      ctx.fillStyle = arch;
-      ctx.fillRect(0, 0, W, 200);
+      // Soft clouds
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+      const cloudOffset = (F * 0.15) % (W + 100);
+      // Cloud 1
+      const c1x = 60 - cloudOffset * 0.3;
+      ctx.beginPath();
+      ctx.arc(c1x, 40, 18, 0, Math.PI * 2);
+      ctx.arc(c1x + 18, 38, 22, 0, Math.PI * 2);
+      ctx.arc(c1x + 38, 42, 18, 0, Math.PI * 2);
+      ctx.arc(c1x + 25, 50, 16, 0, Math.PI * 2);
+      ctx.fill();
+      // Cloud 2
+      const c2x = 250 - cloudOffset * 0.2;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+      ctx.beginPath();
+      ctx.arc(c2x, 65, 14, 0, Math.PI * 2);
+      ctx.arc(c2x + 14, 60, 18, 0, Math.PI * 2);
+      ctx.arc(c2x + 32, 65, 14, 0, Math.PI * 2);
+      ctx.fill();
+      // Cloud 3 (small, distant)
+      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+      const c3x = 320 - cloudOffset * 0.1;
+      ctx.beginPath();
+      ctx.arc(c3x, 25, 10, 0, Math.PI * 2);
+      ctx.arc(c3x + 12, 23, 14, 0, Math.PI * 2);
+      ctx.arc(c3x + 26, 27, 10, 0, Math.PI * 2);
+      ctx.fill();
       
-      // Brick wall texture (left and right walls)
-      ctx.fillStyle = "#2a1f1a";
-      // Left wall bricks
-      for (let row = 0; row < 12; row++) {
-        for (let col = 0; col < 2; col++) {
-          const offset = (row % 2) * 15;
-          const bx = col * 30 + offset - 5;
-          const by = row * 40 + 20;
-          ctx.fillRect(bx, by, 28, 38);
-          // Brick highlight
-          ctx.fillStyle = "rgba(80, 50, 40, 0.5)";
-          ctx.fillRect(bx, by, 28, 2);
-          ctx.fillStyle = "#2a1f1a";
+      // Sun glow in upper right
+      const sunGrad = ctx.createRadialGradient(W - 50, 40, 5, W - 50, 40, 140);
+      sunGrad.addColorStop(0, "rgba(255, 245, 210, 0.8)");
+      sunGrad.addColorStop(0.3, "rgba(255, 230, 170, 0.3)");
+      sunGrad.addColorStop(1, "rgba(255, 210, 120, 0)");
+      ctx.fillStyle = sunGrad;
+      ctx.fillRect(W - 200, 0, 200, 200);
+      // Sun core
+      ctx.fillStyle = "#fff8dc";
+      ctx.beginPath();
+      ctx.arc(W - 50, 40, 12, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Birds (small V shapes)
+      ctx.strokeStyle = "rgba(40, 40, 50, 0.7)";
+      ctx.lineWidth = 1.2;
+      const birdOffset = (F * 0.3) % W;
+      for (let i = 0; i < 3; i++) {
+        const bx = ((i * 130) + birdOffset) % W;
+        const by = 70 + i * 15;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx + 3, by - 2, bx + 6, by);
+        ctx.moveTo(bx + 6, by);
+        ctx.quadraticCurveTo(bx + 9, by - 2, bx + 12, by);
+        ctx.stroke();
+      }
+      
+      // ── FAR BACKGROUND - Distant skyscrapers (hazy) ──
+      ctx.fillStyle = "rgba(130, 125, 130, 0.55)";
+      for (let i = 0; i < 9; i++) {
+        const bx = i * 48;
+        const bh = 90 + ((i * 41) % 80);
+        ctx.fillRect(bx, 220 - bh, 44, bh);
+        // Building top antenna
+        if (i % 3 === 0) {
+          ctx.fillRect(bx + 20, 220 - bh - 15, 2, 15);
         }
       }
-      // Right wall bricks
-      for (let row = 0; row < 12; row++) {
-        for (let col = 0; col < 2; col++) {
-          const offset = (row % 2) * 15;
-          const bx = W - 65 + col * 30 + offset;
-          const by = row * 40 + 20;
-          ctx.fillRect(bx, by, 28, 38);
-          ctx.fillStyle = "rgba(80, 50, 40, 0.5)";
-          ctx.fillRect(bx, by, 28, 2);
-          ctx.fillStyle = "#2a1f1a";
+      // Distant skyscraper windows
+      ctx.fillStyle = "rgba(220, 210, 180, 0.55)";
+      for (let i = 0; i < 50; i++) {
+        const wx = (i * 13) % W;
+        const wy = 150 + (i * 7) % 70;
+        ctx.fillRect(wx, wy, 2, 3);
+      }
+      
+      // ── MID BACKGROUND - Brownstone buildings ──
+      ctx.fillStyle = "#a35a3c";
+      for (let i = 0; i < 5; i++) {
+        const bx = i * 85 - 5;
+        const bh = 120 + ((i * 31) % 35);
+        ctx.fillRect(bx, 280 - bh, 82, bh);
+        // Building tops (slight roof line)
+        ctx.fillStyle = "#7a3f28";
+        ctx.fillRect(bx, 280 - bh - 3, 82, 4);
+        ctx.fillStyle = "#a35a3c";
+      }
+      
+      // Brick pattern on brownstones (more visible)
+      ctx.strokeStyle = "rgba(60, 30, 20, 0.3)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 5; i++) {
+        const bx = i * 85 - 5;
+        // Horizontal mortar lines
+        for (let row = 0; row < 12; row++) {
+          const y = 165 + row * 11;
+          if (y < 280) {
+            ctx.beginPath();
+            ctx.moveTo(bx, y);
+            ctx.lineTo(bx + 82, y);
+            ctx.stroke();
+          }
+        }
+        // Vertical mortar (offset per row)
+        for (let row = 0; row < 12; row++) {
+          const y = 165 + row * 11;
+          const offset = (row % 2) * 20;
+          for (let x = 0; x < 82; x += 40) {
+            ctx.beginPath();
+            ctx.moveTo(bx + x + offset, y);
+            ctx.lineTo(bx + x + offset, y + 11);
+            ctx.stroke();
+          }
         }
       }
       
-      // Graffiti on left wall (subtle)
-      ctx.fillStyle = "#d97706";
-      ctx.font = "bold italic 14px sans-serif";
+      // Building windows (with frames)
+      for (let i = 0; i < 5; i++) {
+        const bx = i * 85 - 5;
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            const wx = bx + 12 + col * 22;
+            const wy = 178 + row * 28;
+            // Window frame
+            ctx.fillStyle = "#1a0f08";
+            ctx.fillRect(wx - 1, wy - 1, 14, 20);
+            // Window glass
+            ctx.fillStyle = "#3a2818";
+            ctx.fillRect(wx, wy, 12, 18);
+            // Reflection (light from sky)
+            const grad2 = ctx.createLinearGradient(wx, wy, wx + 12, wy + 18);
+            grad2.addColorStop(0, "rgba(255, 240, 200, 0.8)");
+            grad2.addColorStop(0.5, "rgba(180, 200, 220, 0.3)");
+            grad2.addColorStop(1, "rgba(80, 100, 120, 0.2)");
+            ctx.fillStyle = grad2;
+            ctx.fillRect(wx, wy, 12, 18);
+            // Window cross
+            ctx.strokeStyle = "rgba(20, 10, 5, 0.4)";
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(wx + 6, wy);
+            ctx.lineTo(wx + 6, wy + 18);
+            ctx.moveTo(wx, wy + 9);
+            ctx.lineTo(wx + 12, wy + 9);
+            ctx.stroke();
+            // Window sill
+            ctx.fillStyle = "#5a3020";
+            ctx.fillRect(wx - 2, wy + 18, 16, 2);
+          }
+        }
+      }
+      
+      // Fire escapes (metal staircases on buildings)
+      ctx.strokeStyle = "#2a2a2a";
+      ctx.fillStyle = "#1a1a1a";
+      ctx.lineWidth = 1;
+      [70, 240].forEach(fx => {
+        // Vertical rails
+        ctx.fillRect(fx, 175, 2, 90);
+        ctx.fillRect(fx + 18, 175, 2, 90);
+        // Horizontal platforms
+        for (let py = 200; py < 270; py += 28) {
+          ctx.fillRect(fx, py, 20, 2);
+        }
+        // Diagonal ladders
+        ctx.strokeStyle = "#2a2a2a";
+        for (let py = 200; py < 250; py += 28) {
+          ctx.beginPath();
+          ctx.moveTo(fx + 2, py);
+          ctx.lineTo(fx + 18, py + 26);
+          ctx.stroke();
+        }
+      });
+      
+      // Trees behind fence (urban park trees)
+      const drawTree = (tx, ty, size) => {
+        // Trunk
+        ctx.fillStyle = "#3a2818";
+        ctx.fillRect(tx - 2, ty, 4, size * 0.4);
+        // Foliage (multiple circles)
+        const foliage = ctx.createRadialGradient(tx, ty - size*0.3, 5, tx, ty - size*0.3, size);
+        foliage.addColorStop(0, "#5a8c3a");
+        foliage.addColorStop(1, "#2a4a1a");
+        ctx.fillStyle = foliage;
+        ctx.beginPath();
+        ctx.arc(tx - size*0.4, ty - size*0.2, size * 0.5, 0, Math.PI * 2);
+        ctx.arc(tx + size*0.4, ty - size*0.2, size * 0.5, 0, Math.PI * 2);
+        ctx.arc(tx, ty - size*0.5, size * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      drawTree(60, 290, 20);
+      drawTree(W - 60, 290, 22);
+      
+      // Graffiti on building walls (more colorful)
+      ctx.fillStyle = "#dc2626";
+      ctx.font = "bold italic 20px sans-serif";
       ctx.textAlign = "left";
       ctx.save();
-      ctx.translate(8, 180);
-      ctx.rotate(-0.1);
-      ctx.globalAlpha = 0.5;
-      ctx.fillText("SS", 0, 0);
+      ctx.translate(10, 255);
+      ctx.rotate(-0.08);
+      ctx.globalAlpha = 0.75;
+      ctx.fillText("NYC", 0, 0);
+      // Drip effect
+      ctx.fillRect(15, 0, 2, 8);
+      ctx.fillRect(35, 2, 2, 6);
       ctx.restore();
       
-      ctx.fillStyle = "#5a3030";
+      ctx.fillStyle = "#2563eb";
+      ctx.font = "bold italic 18px sans-serif";
+      ctx.save();
+      ctx.translate(W - 75, 245);
+      ctx.rotate(0.06);
+      ctx.globalAlpha = 0.75;
+      ctx.fillText("KING", 0, 0);
+      ctx.restore();
+      
+      // Small tag in middle
+      ctx.fillStyle = "#facc15";
       ctx.font = "bold italic 12px sans-serif";
       ctx.save();
-      ctx.translate(15, 280);
-      ctx.rotate(0.05);
-      ctx.globalAlpha = 0.4;
-      ctx.fillText("STREET", 0, 0);
-      ctx.restore();
-      
-      // Graffiti on right wall
-      ctx.fillStyle = "#7c2d12";
-      ctx.font = "bold italic 16px sans-serif";
-      ctx.save();
-      ctx.translate(W - 60, 200);
-      ctx.rotate(0.08);
-      ctx.globalAlpha = 0.5;
-      ctx.fillText("KING", 0, 0);
+      ctx.translate(155, 260);
+      ctx.rotate(-0.05);
+      ctx.globalAlpha = 0.6;
+      ctx.fillText("SS", 0, 0);
       ctx.restore();
       
       ctx.globalAlpha = 1;
       
-      // Hanging tunnel lights (3 of them)
-      for (let i = 0; i < 3; i++) {
-        const lx = 80 + i * 120;
-        const ly = 30;
-        // Light cone (soft glow)
-        const lightGrad = ctx.createRadialGradient(lx, ly + 5, 5, lx, ly + 60, 80);
-        lightGrad.addColorStop(0, "rgba(255, 220, 150, 0.4)");
-        lightGrad.addColorStop(0.5, "rgba(255, 180, 100, 0.15)");
-        lightGrad.addColorStop(1, "rgba(255, 180, 100, 0)");
-        ctx.fillStyle = lightGrad;
-        ctx.beginPath();
-        ctx.moveTo(lx, ly);
-        ctx.lineTo(lx - 60, ly + 120);
-        ctx.lineTo(lx + 60, ly + 120);
-        ctx.closePath();
-        ctx.fill();
-        // Light bulb
-        ctx.fillStyle = "#fef3c7";
-        ctx.beginPath();
-        ctx.arc(lx, ly + 5, 4, 0, Math.PI * 2);
-        ctx.fill();
-        // Wire
-        ctx.strokeStyle = "#1a1a1a";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(lx, 0);
-        ctx.lineTo(lx, ly);
-        ctx.stroke();
-      }
-      
-      // Chain link fence (subtle in middle distance)
-      ctx.strokeStyle = "rgba(100, 100, 100, 0.15)";
+      // Chain link fence (left and right court boundary - more detailed)
+      ctx.strokeStyle = "rgba(140, 140, 140, 0.5)";
       ctx.lineWidth = 1;
-      for (let x = 70; x < W - 70; x += 12) {
-        ctx.beginPath();
-        ctx.moveTo(x, 250);
-        ctx.lineTo(x + 8, 258);
-        ctx.lineTo(x, 266);
-        ctx.lineTo(x - 8, 258);
-        ctx.closePath();
-        ctx.stroke();
+      // Left fence diamond pattern
+      for (let y = 285; y < 460; y += 8) {
+        for (let x = 5; x < 38; x += 8) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 6, y + 6);
+          ctx.moveTo(x + 6, y);
+          ctx.lineTo(x, y + 6);
+          ctx.stroke();
+        }
       }
+      // Right fence
+      for (let y = 285; y < 460; y += 8) {
+        for (let x = W - 38; x < W - 5; x += 8) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + 6, y + 6);
+          ctx.moveTo(x + 6, y);
+          ctx.lineTo(x, y + 6);
+          ctx.stroke();
+        }
+      }
+      // Fence rails (top, middle, bottom)
+      ctx.strokeStyle = "rgba(60, 60, 60, 0.7)";
+      ctx.lineWidth = 2.5;
+      [285, 370, 460].forEach(ry => {
+        ctx.beginPath();
+        ctx.moveTo(0, ry); ctx.lineTo(38, ry);
+        ctx.moveTo(W-38, ry); ctx.lineTo(W, ry);
+        ctx.stroke();
+      });
+      // Fence posts
+      ctx.fillStyle = "#333";
+      [5, 38, W-38, W-5].forEach(px2 => {
+        ctx.fillRect(px2 - 1, 285, 3, 175);
+      });
       
-      // Court floor - asphalt with reflections
+      // Street lamp posts (subtle on each side)
+      ctx.fillStyle = "#1a1a1a";
+      // Left lamp
+      ctx.fillRect(45, 240, 2, 45);
+      ctx.beginPath();
+      ctx.arc(46, 240, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Right lamp
+      ctx.fillRect(W - 47, 240, 2, 45);
+      ctx.beginPath();
+      ctx.arc(W - 46, 240, 4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // ── COURT FLOOR (asphalt/playground style) ──
+      // Main asphalt with gradient
       const floorGrad = ctx.createLinearGradient(0, 460, 0, H);
-      floorGrad.addColorStop(0, "#2a1f1a");
-      floorGrad.addColorStop(0.5, "#1a1410");
-      floorGrad.addColorStop(1, "#0a0805");
+      floorGrad.addColorStop(0, "#62584e");
+      floorGrad.addColorStop(0.5, "#4f463d");
+      floorGrad.addColorStop(1, "#3a3128");
       ctx.fillStyle = floorGrad;
       ctx.fillRect(0, 460, W, H - 460);
       
-      // Wet floor reflections
-      ctx.fillStyle = "rgba(255, 220, 150, 0.04)";
-      for (let i = 0; i < 8; i++) {
-        const wx = (i * 53) % W;
-        ctx.fillRect(wx, 480 + (i*7)%80, 30 + (i*3)%20, 2);
-      }
+      // Court paint (blue/green painted area)
+      const courtPaint = ctx.createLinearGradient(0, 470, 0, H);
+      courtPaint.addColorStop(0, "rgba(70, 130, 180, 0.35)");
+      courtPaint.addColorStop(1, "rgba(50, 90, 140, 0.25)");
+      ctx.fillStyle = courtPaint;
+      ctx.fillRect(40, 470, W - 80, H - 470);
       
-      // Court line (free throw)
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      // Key/paint area (free throw zone) - slight color difference
+      ctx.fillStyle = "rgba(220, 140, 60, 0.15)";
+      ctx.fillRect(W/2 - 50, 470, 100, 70);
+      
+      // Court lines (white painted, slightly worn)
+      ctx.strokeStyle = "rgba(245, 245, 240, 0.85)";
+      ctx.lineWidth = 3;
+      // Top sideline (under hoop area)
+      ctx.beginPath();
+      ctx.moveTo(40, 470);
+      ctx.lineTo(W - 40, 470);
+      ctx.stroke();
+      // Side lines down
+      ctx.beginPath();
+      ctx.moveTo(40, 470);
+      ctx.lineTo(40, H);
+      ctx.moveTo(W - 40, 470);
+      ctx.lineTo(W - 40, H);
+      ctx.stroke();
+      // Key (paint) box
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(0, 470);
-      ctx.lineTo(W, 470);
+      ctx.moveTo(W/2 - 50, 470);
+      ctx.lineTo(W/2 - 50, 540);
+      ctx.lineTo(W/2 + 50, 540);
+      ctx.lineTo(W/2 + 50, 470);
       ctx.stroke();
       // Free throw arc
       ctx.beginPath();
-      ctx.arc(W/2, 470, 75, Math.PI, 0);
+      ctx.arc(W/2, 540, 50, Math.PI, 0);
+      ctx.stroke();
+      // Center stripe (slight)
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(245, 245, 240, 0.5)";
+      ctx.beginPath();
+      ctx.moveTo(40, 580);
+      ctx.lineTo(W - 40, 580);
       ctx.stroke();
       
-      // Water puddles on floor
-      ctx.fillStyle = "rgba(70, 100, 130, 0.2)";
+      // Asphalt texture (cracks and spots)
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      for (let i = 0; i < 35; i++) {
+        const ax = (i * 31) % W;
+        const ay = 470 + (i * 17) % (H - 470);
+        ctx.fillRect(ax, ay, 2, 2);
+      }
+      // Subtle cracks
+      ctx.strokeStyle = "rgba(0,0,0,0.2)";
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.ellipse(80, 540, 35, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(80, 510);
+      ctx.lineTo(110, 525);
+      ctx.lineTo(120, 540);
+      ctx.stroke();
       ctx.beginPath();
-      ctx.ellipse(320, 555, 28, 6, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Puddle highlights
-      ctx.fillStyle = "rgba(180, 200, 220, 0.15)";
-      ctx.beginPath();
-      ctx.ellipse(80, 538, 25, 2, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(W - 90, 530);
+      ctx.lineTo(W - 70, 545);
+      ctx.lineTo(W - 60, 560);
+      ctx.stroke();
+      // Light flecks
+      ctx.fillStyle = "rgba(255,255,255,0.1)";
+      for (let i = 0; i < 20; i++) {
+        const ax = (i * 47) % W;
+        const ay = 480 + (i * 23) % (H - 480);
+        ctx.fillRect(ax, ay, 1, 1);
+      }
+      // Paint wear marks
+      ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+      for (let i = 0; i < 8; i++) {
+        ctx.fillRect(60 + i * 35, 472, 4, 1);
+      }
 
-      // ── HOOP (basketball hoop with detailed backboard) ──
+
+
+      // ── HOOP (PREMIUM basketball hoop) ──
       const hx = game.current.hoop.x;
       const hy = game.current.hoop.y;
       
-      // Backboard pole (extending from top of screen)
-      ctx.fillStyle = "#333";
-      ctx.fillRect(hx - 2, 0, 4, hy - 38);
+      // Backboard support pole (from top, more 3D)
+      // Pole shadow
+      ctx.fillStyle = "rgba(0,0,0,0.2)";
+      ctx.fillRect(hx + 1, 0, 4, hy - 38);
+      // Main pole
+      const poleGrad = ctx.createLinearGradient(hx - 3, 0, hx + 3, 0);
+      poleGrad.addColorStop(0, "#444");
+      poleGrad.addColorStop(0.5, "#2a2a2a");
+      poleGrad.addColorStop(1, "#1a1a1a");
+      ctx.fillStyle = poleGrad;
+      ctx.fillRect(hx - 3, 0, 6, hy - 38);
+      // Pole highlight
+      ctx.fillStyle = "#5a5a5a";
+      ctx.fillRect(hx - 2, 0, 1, hy - 38);
       
-      // Backboard - main panel
-      ctx.fillStyle = "#f5f5f5";
+      // Backboard - premium with multiple layers
+      // Backboard back shadow
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.fillRect(hx - 44, hy - 36, 88, 38);
+      // Main backboard panel
+      const bbGrad = ctx.createLinearGradient(hx - 42, hy - 38, hx - 42, hy);
+      bbGrad.addColorStop(0, "#ffffff");
+      bbGrad.addColorStop(0.5, "#f0f0f0");
+      bbGrad.addColorStop(1, "#dadada");
+      ctx.fillStyle = bbGrad;
       ctx.fillRect(hx - 42, hy - 38, 84, 36);
-      // Backboard shadow
-      ctx.fillStyle = "rgba(0,0,0,0.15)";
-      ctx.fillRect(hx + 38, hy - 36, 4, 34);
-      ctx.fillRect(hx - 42, hy - 4, 84, 2);
-      // Backboard frame
+      // Backboard glass reflection (subtle diagonal)
+      ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+      ctx.beginPath();
+      ctx.moveTo(hx - 42, hy - 38);
+      ctx.lineTo(hx - 20, hy - 38);
+      ctx.lineTo(hx - 40, hy - 18);
+      ctx.lineTo(hx - 42, hy - 18);
+      ctx.closePath();
+      ctx.fill();
+      // Backboard frame (metallic)
       ctx.strokeStyle = "#1a1a1a";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(hx - 42, hy - 38, 84, 36);
-      
-      // Target square (red/orange)
-      ctx.strokeStyle = "#f97316";
       ctx.lineWidth = 3;
-      ctx.strokeRect(hx - 14, hy - 30, 28, 18);
-      // Inner line for depth
-      ctx.strokeStyle = "rgba(249, 115, 22, 0.4)";
+      ctx.strokeRect(hx - 42, hy - 38, 84, 36);
+      // Inner frame highlight
+      ctx.strokeStyle = "#5a5a5a";
       ctx.lineWidth = 1;
-      ctx.strokeRect(hx - 12, hy - 28, 24, 14);
+      ctx.strokeRect(hx - 41, hy - 37, 82, 34);
       
-      // Rim connection bracket
-      ctx.fillStyle = "#1a1a1a";
-      ctx.fillRect(hx - 6, hy - 4, 12, 4);
-      
-      // Rim (orange, with depth)
-      ctx.strokeStyle = "#c25510";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.ellipse(hx, hy + 1, 26, 7, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      // Target square (orange/red, painted)
+      ctx.strokeStyle = "#dc2626";
+      ctx.lineWidth = 3.5;
+      ctx.strokeRect(hx - 15, hy - 30, 30, 19);
+      // Inner target line
       ctx.strokeStyle = "#f97316";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(hx - 13, hy - 28, 26, 15);
+      
+      // Logo on backboard (subtle "SS")
+      ctx.fillStyle = "rgba(220, 38, 38, 0.4)";
+      ctx.font = "bold italic 9px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("SS", hx, hy - 7);
+      
+      // Rim mounting bracket (3D)
+      ctx.fillStyle = "#0a0a0a";
+      ctx.fillRect(hx - 8, hy - 5, 16, 6);
+      ctx.fillStyle = "#2a2a2a";
+      ctx.fillRect(hx - 7, hy - 4, 14, 1);
+      
+      // Rim back (dark for depth)
+      ctx.strokeStyle = "#8a3000";
+      ctx.lineWidth = 7;
       ctx.beginPath();
-      ctx.ellipse(hx, hy, 26, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(hx, hy + 2, 27, 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      // Main rim (orange)
+      ctx.strokeStyle = "#dc6200";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(hx, hy, 26, 7, 0, 0, Math.PI * 2);
       ctx.stroke();
       // Rim highlight
-      ctx.strokeStyle = "#fbb670";
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(hx, hy - 1, 25, 6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      // Rim shine (top)
+      ctx.strokeStyle = "#ffba70";
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.ellipse(hx, hy - 1, 25, 5, 0, Math.PI * 1.2, Math.PI * 1.8);
+      ctx.ellipse(hx, hy - 2, 24, 5, 0, Math.PI * 1.15, Math.PI * 1.85);
       ctx.stroke();
       
-      // Net (more detailed)
-      ctx.strokeStyle = "rgba(255,255,255,0.7)";
-      ctx.lineWidth = 1;
-      const netDepth = 26;
-      for (let i = -25; i <= 25; i += 4) {
+      // Net (detailed mesh)
+      ctx.strokeStyle = "rgba(255,255,255,0.75)";
+      ctx.lineWidth = 1.2;
+      const netDepth = 28;
+      // Vertical strings
+      for (let i = -25; i <= 25; i += 3.5) {
         ctx.beginPath();
         ctx.moveTo(hx + i, hy);
-        ctx.quadraticCurveTo(hx + i * 0.8, hy + netDepth/2, hx + i * 0.55, hy + netDepth);
+        ctx.quadraticCurveTo(hx + i * 0.75, hy + netDepth/2, hx + i * 0.5, hy + netDepth);
         ctx.stroke();
       }
-      // Net horizontal weave
-      ctx.strokeStyle = "rgba(255,255,255,0.4)";
-      ctx.beginPath();
-      ctx.ellipse(hx, hy + 10, 22, 4, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.ellipse(hx, hy + 20, 18, 3, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      // Net horizontal weaves (3 levels)
+      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      ctx.lineWidth = 1;
+      [9, 18, 26].forEach((yOff, idx) => {
+        const radiusX = 23 - idx * 4;
+        const radiusY = 3.5 - idx * 0.8;
+        ctx.beginPath();
+        ctx.ellipse(hx, hy + yOff, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      });
 
       // Spawn falling balls - from sides with proper horizontal speed
       if (F >= game.current.nextBallTime) {
@@ -845,14 +1109,15 @@ export default function App() {
         }
         // MISS - convert to bouncing ball so player can catch it again!
         else if (sb.y > 540) {
-          // Cap velocity hard so the converted bounce isn't explosive
-          const cappedVy = Math.min(Math.abs(sb.vy), 3.5);
-          const cappedVx = Math.max(-2, Math.min(2, sb.vx));
+          // Cap ALL velocities hard before converting to falling ball
+          // This way subsequent bounces won't be explosive
+          const cappedVx = Math.max(-1.5, Math.min(1.5, sb.vx));
+          // Set a low vy directly so first bounce is gentle
           game.current.fallingBalls.push({
             x: sb.x,
             y: 540,
-            vx: cappedVx * 0.7,
-            vy: -cappedVy * 0.4,
+            vx: cappedVx,
+            vy: -1.8, // Fixed gentle bounce
             rot: 0,
             rotSpeed: (Math.random() - 0.5) * 0.15,
           });
