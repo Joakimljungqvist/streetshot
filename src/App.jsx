@@ -356,27 +356,75 @@ export default function App() {
       ctx.ellipse(80, 538, 25, 2, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Hoop
+      // ── HOOP (basketball hoop with detailed backboard) ──
       const hx = game.current.hoop.x;
       const hy = game.current.hoop.y;
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(hx - 40, hy - 35, 80, 5);
-      ctx.strokeStyle = "#f97316";
+      
+      // Backboard pole (extending from top of screen)
+      ctx.fillStyle = "#333";
+      ctx.fillRect(hx - 2, 0, 4, hy - 38);
+      
+      // Backboard - main panel
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillRect(hx - 42, hy - 38, 84, 36);
+      // Backboard shadow
+      ctx.fillStyle = "rgba(0,0,0,0.15)";
+      ctx.fillRect(hx + 38, hy - 36, 4, 34);
+      ctx.fillRect(hx - 42, hy - 4, 84, 2);
+      // Backboard frame
+      ctx.strokeStyle = "#1a1a1a";
       ctx.lineWidth = 2;
-      ctx.strokeRect(hx - 15, hy - 30, 30, 20);
+      ctx.strokeRect(hx - 42, hy - 38, 84, 36);
+      
+      // Target square (red/orange)
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(hx - 14, hy - 30, 28, 18);
+      // Inner line for depth
+      ctx.strokeStyle = "rgba(249, 115, 22, 0.4)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(hx - 12, hy - 28, 24, 14);
+      
+      // Rim connection bracket
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(hx - 6, hy - 4, 12, 4);
+      
+      // Rim (orange, with depth)
+      ctx.strokeStyle = "#c25510";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.ellipse(hx, hy + 1, 26, 7, 0, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.strokeStyle = "#f97316";
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.ellipse(hx, hy, 25, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(hx, hy, 26, 6, 0, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      // Rim highlight
+      ctx.strokeStyle = "#fbb670";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(hx, hy - 1, 25, 5, 0, Math.PI * 1.2, Math.PI * 1.8);
+      ctx.stroke();
+      
+      // Net (more detailed)
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
       ctx.lineWidth = 1;
-      for (let i = -25; i <= 25; i += 6) {
+      const netDepth = 26;
+      for (let i = -25; i <= 25; i += 4) {
         ctx.beginPath();
         ctx.moveTo(hx + i, hy);
-        ctx.lineTo(hx + i * 0.6, hy + 22);
+        ctx.quadraticCurveTo(hx + i * 0.8, hy + netDepth/2, hx + i * 0.55, hy + netDepth);
         ctx.stroke();
       }
+      // Net horizontal weave
+      ctx.strokeStyle = "rgba(255,255,255,0.4)";
+      ctx.beginPath();
+      ctx.ellipse(hx, hy + 10, 22, 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(hx, hy + 20, 18, 3, 0, 0, Math.PI * 2);
+      ctx.stroke();
 
       // Spawn falling balls - from sides with proper horizontal speed
       if (F >= game.current.nextBallTime) {
@@ -419,10 +467,12 @@ export default function App() {
           playSound("bounce_soft");
         }
         
-        // Bounce off ground - realistic energy loss
+        // Bounce off ground - capped bounce so balls don't fly to ceiling
         if (b.y > 540) {
           b.y = 540;
-          b.vy = -Math.abs(b.vy) * 0.4;
+          // Cap the incoming velocity before bouncing to prevent ceiling shots
+          const cappedVy = Math.min(Math.abs(b.vy), 4.5);
+          b.vy = -cappedVy * 0.5;
           b.vx *= 0.85;
           if (Math.abs(b.vy) < 1.2) {
             // Ball lost energy, count as miss and remove
@@ -440,29 +490,52 @@ export default function App() {
           b.vy = Math.abs(b.vy) * 0.85;
         }
         
-        // Draw ball
+        // Draw ball - realistic basketball
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(b.rot);
-        ctx.fillStyle = "#cc5500";
+        // Shadow under ball
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.beginPath();
+        ctx.ellipse(0, 12, 8, 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Main ball (orange-brown)
+        const ballGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, 10);
+        ballGrad.addColorStop(0, "#e76d1f");
+        ballGrad.addColorStop(0.7, "#cc5500");
+        ballGrad.addColorStop(1, "#8a3800");
+        ctx.fillStyle = ballGrad;
         ctx.beginPath();
         ctx.arc(0, 0, 10, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "#222";
-        ctx.lineWidth = 1.5;
+        // Basketball lines (curved)
+        ctx.strokeStyle = "#1a0a00";
+        ctx.lineWidth = 1.2;
+        // Vertical curve (left)
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, -Math.PI/2 - 0.3, Math.PI/2 + 0.3);
+        ctx.stroke();
+        // Horizontal line
         ctx.beginPath();
         ctx.moveTo(-10, 0);
         ctx.lineTo(10, 0);
-        ctx.moveTo(0, -10);
-        ctx.lineTo(0, 10);
         ctx.stroke();
+        // Curve right
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, Math.PI/2 - 0.3, Math.PI*1.5 + 0.3);
+        ctx.stroke();
+        // Highlight
+        ctx.fillStyle = "rgba(255, 200, 150, 0.4)";
+        ctx.beginPath();
+        ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
         ctx.restore();
       }
 
       // Player - animated!
       const px = game.current.player.x;
       const py = game.current.player.y;
-      const facing = game.current.player.facing; // -1 left, 0 idle, 1 right
+      const facing = game.current.player.facing;
       const isMoving = game.current.keys.left || game.current.keys.right;
       const shootAnim = game.current.player.shootAnim;
       const isShoot = shootAnim > 0;
@@ -478,106 +551,210 @@ export default function App() {
       if (shootAnim > 0) game.current.player.shootAnim--;
       
       const walk = game.current.player.walkCycle;
-      const breath = Math.sin(F * 0.05) * 1.2; // subtle idle breathing
+      const breath = Math.sin(F * 0.05) * 1.2;
       const legSwing = isMoving ? Math.sin(walk) * 6 : 0;
       const armSwing = isMoving ? Math.sin(walk) * 4 : 0;
       const bodyBob = isMoving ? Math.abs(Math.sin(walk * 2)) * 2 : breath;
       const lean = facing * (isMoving ? 2 : 0);
       
-      // Shoot animation - arms go up
+      // Shoot animation
       const shootProgress = isShoot ? (20 - shootAnim) / 20 : 0;
-      const armRaise = Math.sin(shootProgress * Math.PI) * 35;
+      const armRaise = Math.sin(shootProgress * Math.PI) * 38;
       
-      // Shadow
-      ctx.fillStyle = "rgba(0,0,0,0.4)";
+      // Skin color (more natural)
+      const SKIN = "#b8835a";
+      const SKIN_SHADE = "#8a5d3a";
+      const HOODIE = "#0f0f0f";
+      const HOODIE_SHADE = "#050505";
+      const HOODIE_HIGHLIGHT = "#1f1f1f";
+      
+      // Shadow on ground
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.beginPath();
-      ctx.ellipse(px, py + 50, 22, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(px, py + 51, 24, 5, 0, 0, Math.PI * 2);
       ctx.fill();
       
-      // Legs (with walk cycle)
-      ctx.fillStyle = "#1a1a1a";
       ctx.save();
       ctx.translate(px + lean, py + bodyBob);
-      // Left leg
-      ctx.fillRect(-14, 20 - legSwing, 12, 28 + legSwing);
-      // Right leg
-      ctx.fillRect(2, 20 + legSwing, 12, 28 - legSwing);
-      // Sneakers (white with stripes)
+      
+      // ── LEGS (shorts visible + legs) ──
+      // Shorts (basketball shorts, longer)
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(-16, 18, 32, 14);
+      // White stripe on shorts
       ctx.fillStyle = "#fff";
-      ctx.fillRect(-16, 46 - legSwing, 14, 5);
-      ctx.fillRect(2, 46 + legSwing, 14, 5);
-      // Sneaker stripes
+      ctx.fillRect(-16, 22, 32, 2);
+      // Left leg (skin)
+      ctx.fillStyle = SKIN;
+      ctx.fillRect(-13, 30 - legSwing, 10, 16 + legSwing);
+      // Right leg
+      ctx.fillRect(3, 30 + legSwing, 10, 16 - legSwing);
+      // Leg shading
+      ctx.fillStyle = SKIN_SHADE;
+      ctx.fillRect(-13, 30 - legSwing, 2, 16 + legSwing);
+      ctx.fillRect(3, 30 + legSwing, 2, 16 - legSwing);
+      // Socks (white, high)
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillRect(-14, 42 - legSwing, 12, 6);
+      ctx.fillRect(2, 42 + legSwing, 12, 6);
+      // Sock stripes
       ctx.fillStyle = "#f97316";
-      ctx.fillRect(-15, 48 - legSwing, 12, 1);
-      ctx.fillRect(3, 48 + legSwing, 12, 1);
-      ctx.restore();
-      
-      // Body (hoodie)
-      ctx.save();
-      ctx.translate(px + lean, py + bodyBob);
+      ctx.fillRect(-14, 43 - legSwing, 12, 1);
+      ctx.fillRect(2, 43 + legSwing, 12, 1);
+      // Sneakers (Air Jordan style)
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-16, 47 - legSwing, 15, 5);
+      ctx.fillRect(1, 47 + legSwing, 15, 5);
+      // Sneaker dark accent (toe)
       ctx.fillStyle = "#1a1a1a";
-      ctx.fillRect(-20, -10, 40, 35);
-      // Hoodie hood (back of head shape)
-      ctx.fillStyle = "#2a2a2a";
+      ctx.fillRect(-3, 47 - legSwing, 2, 5);
+      ctx.fillRect(13, 47 + legSwing, 2, 5);
+      // Swoosh
+      ctx.fillStyle = "#f97316";
+      ctx.fillRect(-10, 48 - legSwing, 4, 1);
+      ctx.fillRect(6, 48 + legSwing, 4, 1);
+      
+      // ── BODY (hoodie) ──
+      // Main hoodie
+      ctx.fillStyle = HOODIE;
       ctx.beginPath();
-      ctx.arc(0, -10, 15, Math.PI, 0);
+      ctx.moveTo(-22, -8);
+      ctx.lineTo(22, -8);
+      ctx.lineTo(20, 25);
+      ctx.lineTo(-20, 25);
+      ctx.closePath();
       ctx.fill();
-      // SS logo
+      // Hoodie shading on right side
+      ctx.fillStyle = HOODIE_SHADE;
+      ctx.beginPath();
+      ctx.moveTo(15, -8);
+      ctx.lineTo(22, -8);
+      ctx.lineTo(20, 25);
+      ctx.lineTo(13, 25);
+      ctx.closePath();
+      ctx.fill();
+      // Hoodie highlight (left side)
+      ctx.fillStyle = HOODIE_HIGHLIGHT;
+      ctx.fillRect(-22, -8, 3, 33);
+      
+      // Hood at back of head
+      ctx.fillStyle = HOODIE_SHADE;
+      ctx.beginPath();
+      ctx.arc(0, -10, 17, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = HOODIE;
+      ctx.beginPath();
+      ctx.arc(0, -8, 15, Math.PI, 0);
+      ctx.fill();
+      
+      // Hoodie pocket (front)
+      ctx.fillStyle = HOODIE_SHADE;
+      ctx.fillRect(-15, 5, 30, 12);
+      ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-15, 5, 30, 12);
+      
+      // SS Logo on chest
       ctx.fillStyle = "#f97316";
-      ctx.font = "bold 10px 'DM Sans'";
+      ctx.font = "bold italic 11px 'DM Sans'";
       ctx.textAlign = "center";
-      ctx.fillText("SS", 0, 10);
+      ctx.fillText("SS", 0, 2);
+      
+      // Chain necklace 
+      ctx.fillStyle = "#d4af37";
+      ctx.beginPath();
+      ctx.arc(0, -3, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#d4af37";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-6, -6);
+      ctx.quadraticCurveTo(0, -2, 6, -6);
+      ctx.stroke();
+      
       ctx.restore();
       
-      // Arms
+      // ── ARMS ──
       ctx.save();
       ctx.translate(px + lean, py + bodyBob);
-      ctx.fillStyle = "#1a1a1a";
+      ctx.fillStyle = HOODIE;
       if (isShoot) {
         // Both arms raised for shoot
-        ctx.fillRect(-25, -8 - armRaise, 8, 28);
-        ctx.fillRect(17, -8 - armRaise, 8, 28);
-        // Hands at top
-        ctx.fillStyle = "#c8956a";
+        ctx.fillRect(-26, -6 - armRaise, 9, 28);
+        ctx.fillRect(17, -6 - armRaise, 9, 28);
+        // Hand shading
+        ctx.fillStyle = HOODIE_SHADE;
+        ctx.fillRect(-26, -6 - armRaise, 2, 28);
+        // Hands
+        ctx.fillStyle = SKIN;
         ctx.beginPath();
-        ctx.arc(-21, -10 - armRaise, 5, 0, Math.PI * 2);
-        ctx.arc(21, -10 - armRaise, 5, 0, Math.PI * 2);
+        ctx.arc(-22, -8 - armRaise, 5, 0, Math.PI * 2);
+        ctx.arc(22, -8 - armRaise, 5, 0, Math.PI * 2);
         ctx.fill();
       } else {
         // Normal arms with walk swing
-        ctx.fillRect(-25, -8 + armSwing, 8, 28);
-        ctx.fillRect(17, -8 - armSwing, 8, 28);
+        ctx.fillRect(-26, -6 + armSwing, 9, 28);
+        ctx.fillRect(17, -6 - armSwing, 9, 28);
+        ctx.fillStyle = HOODIE_SHADE;
+        ctx.fillRect(-26, -6 + armSwing, 2, 28);
         // Hands
-        ctx.fillStyle = "#c8956a";
+        ctx.fillStyle = SKIN;
         ctx.beginPath();
-        ctx.arc(-21, 20 + armSwing, 4, 0, Math.PI * 2);
-        ctx.arc(21, 20 - armSwing, 4, 0, Math.PI * 2);
+        ctx.arc(-22, 21 + armSwing, 4, 0, Math.PI * 2);
+        ctx.arc(22, 21 - armSwing, 4, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
       
-      // Head
+      // ── HEAD ──
       ctx.save();
       ctx.translate(px + lean, py + bodyBob);
-      ctx.fillStyle = "#c8956a";
+      
+      // Head (face)
+      ctx.fillStyle = SKIN;
       ctx.beginPath();
       ctx.arc(0, -18, 11, 0, Math.PI * 2);
       ctx.fill();
-      // Eyes (small dots)
-      ctx.fillStyle = "#000";
-      ctx.fillRect(-4 + facing, -20, 2, 2);
-      ctx.fillRect(2 + facing, -20, 2, 2);
-      // Cap (backwards)
+      // Face shading on opposite side of facing
+      ctx.fillStyle = SKIN_SHADE;
+      ctx.beginPath();
+      ctx.arc(facing * 3, -18, 11, -Math.PI/2 + facing*0.3, Math.PI/2 + facing*0.3);
+      ctx.fill();
+      
+      // Cap (backwards) - more 3D
       ctx.fillStyle = "#000";
       ctx.beginPath();
-      ctx.arc(0, -22, 11, Math.PI, 0);
+      ctx.arc(0, -22, 12, Math.PI, 0);
       ctx.fill();
-      ctx.fillRect(-11, -22, 22, 5);
-      // Cap brim (back side - opposite to facing)
-      ctx.fillRect(-14 - facing * 2, -18, 4, 3);
-      // Subtle cap detail
+      // Cap front
+      ctx.fillRect(-12, -22, 24, 6);
+      // Cap highlight
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(-12, -22, 24, 1);
+      
+      // Cap brim (back side)
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-16 + facing * -2, -19, 6, 4);
+      
+      // Cap logo (small SS)
       ctx.fillStyle = "#f97316";
-      ctx.fillRect(-2, -27, 4, 2);
+      ctx.font = "bold 7px 'DM Sans'";
+      ctx.fillText("SS", 0, -25);
+      
+      // Eyes
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-4 + facing, -19, 2, 2);
+      ctx.fillRect(2 + facing, -19, 2, 2);
+      
+      // Subtle beard/jaw shading
+      ctx.fillStyle = SKIN_SHADE;
+      ctx.fillRect(-4, -12, 8, 1);
+      
+      // Earrings
+      ctx.fillStyle = "#d4af37";
+      ctx.fillRect(-10 + facing * -1, -15, 1, 2);
+      ctx.fillRect(9 + facing * -1, -15, 1, 2);
+      
       ctx.restore();
 
       // Catch zone indicator (matches shoot logic: 40px wide, 80px tall around y=480)
@@ -603,18 +780,37 @@ export default function App() {
           playSound("bounce_soft");
         }
         
-        ctx.fillStyle = "#cc5500";
+        // Draw shot ball - realistic
+        ctx.save();
+        ctx.translate(sb.x, sb.y);
+        // Rotation based on movement
+        const shotRot = (F * 0.15) % (Math.PI * 2);
+        ctx.rotate(shotRot);
+        const sbGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, 10);
+        sbGrad.addColorStop(0, "#e76d1f");
+        sbGrad.addColorStop(0.7, "#cc5500");
+        sbGrad.addColorStop(1, "#8a3800");
+        ctx.fillStyle = sbGrad;
         ctx.beginPath();
-        ctx.arc(sb.x, sb.y, 10, 0, Math.PI * 2);
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "#222";
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "#1a0a00";
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(sb.x - 10, sb.y);
-        ctx.lineTo(sb.x + 10, sb.y);
-        ctx.moveTo(sb.x, sb.y - 10);
-        ctx.lineTo(sb.x, sb.y + 10);
+        ctx.arc(0, 0, 10, -Math.PI/2 - 0.3, Math.PI/2 + 0.3);
         ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-10, 0);
+        ctx.lineTo(10, 0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, Math.PI/2 - 0.3, Math.PI*1.5 + 0.3);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(255, 200, 150, 0.4)";
+        ctx.beginPath();
+        ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
         const dx2 = sb.x - hx;
         const dy2 = sb.y - hy;
         // SWISH - perfect through center
@@ -649,12 +845,14 @@ export default function App() {
         }
         // MISS - convert to bouncing ball so player can catch it again!
         else if (sb.y > 540) {
-          // Ball hit the ground - convert to bouncing ball with realistic bounce
+          // Cap velocity hard so the converted bounce isn't explosive
+          const cappedVy = Math.min(Math.abs(sb.vy), 3.5);
+          const cappedVx = Math.max(-2, Math.min(2, sb.vx));
           game.current.fallingBalls.push({
             x: sb.x,
             y: 540,
-            vx: sb.vx * 0.8,
-            vy: -Math.abs(sb.vy) * 0.5,
+            vx: cappedVx * 0.7,
+            vy: -cappedVy * 0.4,
             rot: 0,
             rotSpeed: (Math.random() - 0.5) * 0.15,
           });
