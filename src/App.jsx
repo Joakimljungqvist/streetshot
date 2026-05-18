@@ -31,6 +31,10 @@ export default function App() {
     keys: { left: false, right: false },
     nextBallTime: 0,
     frame: 0,
+    particles: [], // swish particles
+    dustParticles: [], // dust under feet
+    fireParticles: [], // fire when on combo
+    shakeAmount: 0, // screen shake
   });
 
   const playSound = (type) => {
@@ -97,6 +101,10 @@ export default function App() {
     game.current.shotBall = null;
     game.current.nextBallTime = 0;
     game.current.frame = 0;
+    game.current.particles = [];
+    game.current.dustParticles = [];
+    game.current.fireParticles = [];
+    game.current.shakeAmount = 0;
   };
 
   const shoot = () => {
@@ -193,6 +201,17 @@ export default function App() {
       game.current.hoop.speed = 0.3 + difficulty * 0.8;
       game.current.hoop.yspeed = 0.1 + difficulty * 0.35;
       const ballInterval = Math.max(80, 150 - difficulty * 70);
+      
+      // Screen shake
+      let shakeX = 0, shakeY = 0;
+      if (game.current.shakeAmount > 0) {
+        shakeX = (Math.random() - 0.5) * game.current.shakeAmount;
+        shakeY = (Math.random() - 0.5) * game.current.shakeAmount;
+        game.current.shakeAmount *= 0.85;
+        if (game.current.shakeAmount < 0.5) game.current.shakeAmount = 0;
+      }
+      ctx.save();
+      ctx.translate(shakeX, shakeY);
 
       // ── NYC STREET BASKETBALL COURT - DAYTIME (ENHANCED) ──
       // Sky gradient (warm daylight, more dramatic)
@@ -744,6 +763,7 @@ export default function App() {
             playSound("drop");
             setMisses(m => m + 1);
             setCombo(0);
+            game.current.currentCombo = 0;
             continue;
           }
         }
@@ -753,6 +773,16 @@ export default function App() {
           b.y = 15;
           b.vy = Math.abs(b.vy) * 0.85;
         }
+        
+        // Ground shadow (separate from ball, on the floor)
+        const groundY = 555;
+        const heightAboveGround = groundY - b.y;
+        const shadowSize = Math.max(3, 10 - heightAboveGround / 80);
+        const shadowAlpha = Math.max(0.05, 0.4 - heightAboveGround / 1500);
+        ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(b.x, groundY, shadowSize, shadowSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
         
         // Draw ball - realistic basketball
         ctx.save();
@@ -1024,10 +1054,56 @@ export default function App() {
       // Catch zone indicator (matches shoot logic: 40px wide, 80px tall around y=480)
       ctx.fillStyle = "rgba(249, 115, 22, 0.08)";
       ctx.fillRect(px - 40, 400, 80, 160);
+      
+      // AIM LINE - if there's a ball in catch zone, show trajectory
+      if (!game.current.shotBall) {
+        let canCatch = false;
+        for (let i = 0; i < game.current.fallingBalls.length; i++) {
+          const b = game.current.fallingBalls[i];
+          const dx = Math.abs(b.x - px);
+          const dy = Math.abs(b.y - 480);
+          if (dx < 40 && dy < 80) {
+            canCatch = true;
+            break;
+          }
+        }
+        if (canCatch) {
+          // Draw dotted aim line toward hoop
+          const hxA = game.current.hoop.x;
+          const hyA = game.current.hoop.y;
+          ctx.strokeStyle = "rgba(249, 115, 22, 0.5)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
+          // Animated dash offset
+          ctx.lineDashOffset = -(F * 0.3);
+          ctx.beginPath();
+          // Curved path (parabolic approximation)
+          const startX = px;
+          const startY = 460;
+          const cpX = (startX + hxA) / 2;
+          const cpY = Math.min(startY, hyA) - 60;
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(cpX, cpY, hxA, hyA);
+          ctx.stroke();
+          ctx.setLineDash([]); // Reset
+          // Pulsing target circle on hoop
+          const pulse = Math.sin(F * 0.2) * 0.3 + 0.7;
+          ctx.strokeStyle = `rgba(249, 115, 22, ${pulse * 0.7})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(hxA, hyA, 30 + Math.sin(F * 0.15) * 4, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
 
       // Shot ball
       if (game.current.shotBall) {
         const sb = game.current.shotBall;
+        // Store trail history
+        if (!sb.trail) sb.trail = [];
+        sb.trail.push({ x: sb.x, y: sb.y });
+        if (sb.trail.length > 8) sb.trail.shift();
+        
         sb.x += sb.vx;
         sb.y += sb.vy;
         sb.vy += 0.3;
@@ -1043,6 +1119,26 @@ export default function App() {
           sb.vx = -sb.vx * 0.85;
           playSound("bounce_soft");
         }
+        
+        // Draw motion trail (shadow positions)
+        for (let t = 0; t < sb.trail.length; t++) {
+          const tp = sb.trail[t];
+          const alpha = (t / sb.trail.length) * 0.35;
+          ctx.fillStyle = `rgba(249, 115, 22, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(tp.x, tp.y, 9 - (sb.trail.length - t) * 0.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        
+        // Ground shadow for shot ball
+        const sbGroundY = 555;
+        const sbHeight = sbGroundY - sb.y;
+        const sbShadowSize = Math.max(3, 10 - sbHeight / 80);
+        const sbShadowAlpha = Math.max(0.05, 0.35 - sbHeight / 1500);
+        ctx.fillStyle = `rgba(0, 0, 0, ${sbShadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(sb.x, sbGroundY, sbShadowSize, sbShadowSize * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
         
         // Draw shot ball - realistic
         ctx.save();
@@ -1081,10 +1177,32 @@ export default function App() {
         if (Math.abs(dx2) < 14 && Math.abs(dy2) < 8 && sb.vy > 0) {
           playSound("swish");
           setScore(s => s + 3);
+          // SWISH particles - golden burst
+          for (let p = 0; p < 25; p++) {
+            const angle = (p / 25) * Math.PI * 2;
+            const speed = 1 + Math.random() * 3;
+            game.current.particles.push({
+              x: sb.x,
+              y: sb.y + 10,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 1,
+              life: 30 + Math.random() * 15,
+              maxLife: 45,
+              size: 2 + Math.random() * 2,
+              r: 255,
+              g: 200 + Math.random() * 55,
+              b: 50 + Math.random() * 60,
+            });
+          }
+          game.current.shakeAmount = 8; // Screen shake!
           setCombo(c => {
             const nc = c + 1;
+            game.current.currentCombo = nc;
             setBestCombo(bc => Math.max(bc, nc));
-            if (nc >= 3) {
+            if (nc >= 5) {
+              setFeedback({ text: `🔥 ON FIRE! x${nc}`, color: "#facc15" });
+              game.current.shakeAmount = 14; // Bigger shake
+            } else if (nc >= 3) {
               setFeedback({ text: `SWISH x${nc} +3`, color: "#facc15" });
             } else {
               setFeedback({ text: "SWISH! +3", color: "#4ade80" });
@@ -1098,8 +1216,27 @@ export default function App() {
         else if (Math.abs(dx2) < 22 && Math.abs(dx2) >= 14 && Math.abs(dy2) < 8 && sb.vy > 0) {
           playSound("swish");
           setScore(s => s + 1);
+          // Smaller particle burst for rim
+          for (let p = 0; p < 12; p++) {
+            const angle = (p / 12) * Math.PI * 2;
+            const speed = 1 + Math.random() * 2;
+            game.current.particles.push({
+              x: sb.x,
+              y: sb.y + 5,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 0.5,
+              life: 20 + Math.random() * 10,
+              maxLife: 30,
+              size: 1.5 + Math.random() * 1.5,
+              r: 249,
+              g: 115,
+              b: 22,
+            });
+          }
+          game.current.shakeAmount = 4;
           setCombo(c => {
             const nc = c + 1;
+            game.current.currentCombo = nc;
             setBestCombo(bc => Math.max(bc, nc));
             setFeedback({ text: "RIM! +1", color: "#f97316" });
             setTimeout(()=>setFeedback(null), 600);
@@ -1122,6 +1259,7 @@ export default function App() {
             rotSpeed: (Math.random() - 0.5) * 0.15,
           });
           setCombo(0);
+          game.current.currentCombo = 0;
           game.current.shotBall = null;
         }
       }
@@ -1144,6 +1282,111 @@ export default function App() {
       if (game.current.hoop.y > 180 || game.current.hoop.y < 70) {
         game.current.hoop.ydir *= -1;
       }
+      
+      // ── PARTICLES (drawn last, on top of everything) ──
+      
+      // Swish particles (golden glitter)
+      for (let i = game.current.particles.length - 1; i >= 0; i--) {
+        const p = game.current.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15;
+        p.life--;
+        p.size *= 0.96;
+        if (p.life <= 0 || p.size < 0.5) {
+          game.current.particles.splice(i, 1);
+          continue;
+        }
+        const alpha = p.life / p.maxLife;
+        ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        // Glow
+        ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${alpha * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Dust particles (under feet)
+      for (let i = game.current.dustParticles.length - 1; i >= 0; i--) {
+        const d = game.current.dustParticles[i];
+        d.x += d.vx;
+        d.y += d.vy;
+        d.vy -= 0.05;
+        d.life--;
+        d.size *= 0.97;
+        if (d.life <= 0) {
+          game.current.dustParticles.splice(i, 1);
+          continue;
+        }
+        const alpha = (d.life / d.maxLife) * 0.5;
+        ctx.fillStyle = `rgba(180, 160, 140, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Fire particles (around player when combo 5+)
+      const playerCombo = game.current.currentCombo || 0;
+      if (playerCombo >= 5 && F % 3 === 0) {
+        for (let k = 0; k < 2; k++) {
+          game.current.fireParticles.push({
+            x: game.current.player.x + (Math.random() - 0.5) * 30,
+            y: game.current.player.y + 20 + Math.random() * 25,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: -1.5 - Math.random() * 1.5,
+            life: 25 + Math.random() * 10,
+            maxLife: 35,
+            size: 4 + Math.random() * 3,
+          });
+        }
+      }
+      for (let i = game.current.fireParticles.length - 1; i >= 0; i--) {
+        const f = game.current.fireParticles[i];
+        f.x += f.vx;
+        f.y += f.vy;
+        f.life--;
+        f.size *= 0.95;
+        if (f.life <= 0) {
+          game.current.fireParticles.splice(i, 1);
+          continue;
+        }
+        const t = f.life / f.maxLife;
+        // Fire colors: yellow -> orange -> red -> dark
+        let r, g, b;
+        if (t > 0.7) { r = 255; g = 240; b = 100; }
+        else if (t > 0.4) { r = 255; g = 150; b = 30; }
+        else { r = 200; g = 50; b = 20; }
+        const alpha = t * 0.8;
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+        ctx.fill();
+        // Inner glow
+        ctx.fillStyle = `rgba(255, 240, 200, ${alpha * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Spawn dust when player moves
+      if ((game.current.keys.left || game.current.keys.right) && F % 4 === 0) {
+        const side = game.current.keys.left ? 1 : -1;
+        game.current.dustParticles.push({
+          x: game.current.player.x + side * 10,
+          y: game.current.player.y + 50,
+          vx: side * (0.5 + Math.random() * 0.8),
+          vy: -0.2 - Math.random() * 0.4,
+          life: 15 + Math.random() * 10,
+          maxLife: 25,
+          size: 2 + Math.random() * 2,
+        });
+      }
+      
+      // Restore from screen shake
+      ctx.restore();
 
       animationId = requestAnimationFrame(draw);
     };
