@@ -24,7 +24,7 @@ export default function App() {
   const [feedback, setFeedback] = useState(null);
 
   const game = useRef({
-    player: { x: 200, y: 500, facing: 0, walkCycle: 0, shootAnim: 0 },
+    player: { x: 200, y: 500, facing: 0, walkCycle: 0, shootAnim: 0, dribbleBall: { y: 540, vy: 0, side: 1 } },
     hoop: { x: 200, y: 90, dir: 1, speed: 1.5, ydir: 1, yspeed: 0.5, baseY: 90 },
     fallingBalls: [],
     shotBall: null,
@@ -976,7 +976,6 @@ export default function App() {
         // Both arms raised for shoot
         ctx.fillRect(-26, -6 - armRaise, 9, 28);
         ctx.fillRect(17, -6 - armRaise, 9, 28);
-        // Hand shading
         ctx.fillStyle = HOODIE_SHADE;
         ctx.fillRect(-26, -6 - armRaise, 2, 28);
         // Hands
@@ -985,6 +984,17 @@ export default function App() {
         ctx.arc(-22, -8 - armRaise, 5, 0, Math.PI * 2);
         ctx.arc(22, -8 - armRaise, 5, 0, Math.PI * 2);
         ctx.fill();
+        // Tattoos on hands (small lines)
+        ctx.strokeStyle = "rgba(40, 30, 40, 0.7)";
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(-24, -8 - armRaise);
+        ctx.lineTo(-22, -10 - armRaise);
+        ctx.moveTo(-22, -7 - armRaise);
+        ctx.lineTo(-20, -9 - armRaise);
+        ctx.moveTo(22, -8 - armRaise);
+        ctx.lineTo(24, -10 - armRaise);
+        ctx.stroke();
       } else {
         // Normal arms with walk swing
         ctx.fillRect(-26, -6 + armSwing, 9, 28);
@@ -997,6 +1007,21 @@ export default function App() {
         ctx.arc(-22, 21 + armSwing, 4, 0, Math.PI * 2);
         ctx.arc(22, 21 - armSwing, 4, 0, Math.PI * 2);
         ctx.fill();
+        // Tattoos on visible wrists/hands
+        ctx.strokeStyle = "rgba(40, 30, 40, 0.7)";
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        // Left hand tattoo
+        ctx.moveTo(-24, 19 + armSwing);
+        ctx.lineTo(-21, 17 + armSwing);
+        ctx.moveTo(-23, 22 + armSwing);
+        ctx.lineTo(-20, 24 + armSwing);
+        // Right hand tattoo
+        ctx.moveTo(20, 19 - armSwing);
+        ctx.lineTo(23, 17 - armSwing);
+        ctx.moveTo(22, 22 - armSwing);
+        ctx.lineTo(24, 24 - armSwing);
+        ctx.stroke();
       }
       ctx.restore();
       
@@ -1004,7 +1029,31 @@ export default function App() {
       ctx.save();
       ctx.translate(px + lean, py + bodyBob);
       
-      // Head (face)
+      // Neck (skin)
+      ctx.fillStyle = SKIN;
+      ctx.fillRect(-5, -10, 10, 6);
+      ctx.fillStyle = SKIN_SHADE;
+      ctx.fillRect(-5, -10, 2, 6);
+      
+      // Neck tattoo (small geometric design)
+      ctx.strokeStyle = "rgba(40, 30, 40, 0.7)";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      // Small star or symbol
+      ctx.moveTo(2 + facing, -7);
+      ctx.lineTo(4 + facing, -5);
+      ctx.lineTo(2 + facing, -3);
+      ctx.lineTo(0 + facing, -5);
+      ctx.closePath();
+      ctx.stroke();
+      // Tribal line
+      ctx.beginPath();
+      ctx.moveTo(-3 + facing, -9);
+      ctx.lineTo(-1 + facing, -7);
+      ctx.lineTo(-3 + facing, -5);
+      ctx.stroke();
+      
+      // Head (face) - more refined
       ctx.fillStyle = SKIN;
       ctx.beginPath();
       ctx.arc(0, -18, 11, 0, Math.PI * 2);
@@ -1014,6 +1063,58 @@ export default function App() {
       ctx.beginPath();
       ctx.arc(facing * 3, -18, 11, -Math.PI/2 + facing*0.3, Math.PI/2 + facing*0.3);
       ctx.fill();
+      
+      // Jawline shadow (more detailed)
+      ctx.fillStyle = SKIN_SHADE;
+      ctx.beginPath();
+      ctx.arc(0, -13, 9, 0, Math.PI);
+      ctx.fill();
+      
+      // Cheeks (subtle blush/contour)
+      ctx.fillStyle = "rgba(140, 80, 60, 0.3)";
+      ctx.beginPath();
+      ctx.arc(-5 + facing, -17, 2.5, 0, Math.PI * 2);
+      ctx.arc(5 + facing, -17, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Nose (small shadow)
+      ctx.fillStyle = SKIN_SHADE;
+      ctx.fillRect(facing - 0.5, -18, 1, 3);
+      ctx.fillRect(facing - 1, -16, 2, 1);
+      
+      // Eyebrows
+      ctx.fillStyle = "#1a0a05";
+      ctx.fillRect(-5 + facing, -22, 3, 1.5);
+      ctx.fillRect(2 + facing, -22, 3, 1.5);
+      
+      // Eyes (with white + pupil)
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-5 + facing, -20, 3, 2);
+      ctx.fillRect(2 + facing, -20, 3, 2);
+      // Pupils
+      ctx.fillStyle = "#1a0a05";
+      ctx.fillRect(-4 + facing, -19.5, 1.5, 1.5);
+      ctx.fillRect(3 + facing, -19.5, 1.5, 1.5);
+      // Eye shine
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-3.5 + facing, -19.5, 0.5, 0.5);
+      ctx.fillRect(3.5 + facing, -19.5, 0.5, 0.5);
+      
+      // Mouth (small line, slightly smiling)
+      ctx.strokeStyle = "#5a3020";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-3 + facing, -13);
+      ctx.quadraticCurveTo(0 + facing, -12, 3 + facing, -13);
+      ctx.stroke();
+      
+      // Beard stubble
+      ctx.fillStyle = "rgba(30, 20, 15, 0.4)";
+      for (let i = 0; i < 12; i++) {
+        const sx = -5 + (i * 1) % 10;
+        const sy = -14 + ((i * 3) % 4);
+        ctx.fillRect(sx + facing, sy, 0.5, 0.5);
+      }
       
       // Cap (backwards) - more 3D
       ctx.fillStyle = "#000";
@@ -1035,21 +1136,108 @@ export default function App() {
       ctx.font = "bold 7px 'DM Sans'";
       ctx.fillText("SS", 0, -25);
       
-      // Eyes
-      ctx.fillStyle = "#000";
-      ctx.fillRect(-4 + facing, -19, 2, 2);
-      ctx.fillRect(2 + facing, -19, 2, 2);
+      // ── HEADPHONES (over the ear cans) ──
+      // Headband (over cap)
+      ctx.fillStyle = "#1a1a1a";
+      ctx.beginPath();
+      ctx.arc(0, -25, 13, Math.PI + 0.3, -0.3);
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = "#0a0a0a";
+      ctx.stroke();
+      // Inner highlight on headband
+      ctx.strokeStyle = "#3a3a3a";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, -25, 13, Math.PI + 0.3, -0.3);
+      ctx.stroke();
       
-      // Subtle beard/jaw shading
-      ctx.fillStyle = SKIN_SHADE;
-      ctx.fillRect(-4, -12, 8, 1);
+      // Left ear cup
+      ctx.fillStyle = "#1a1a1a";
+      ctx.beginPath();
+      ctx.ellipse(-11, -17, 4, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Left cup inner (cushion)
+      ctx.fillStyle = "#0a0a0a";
+      ctx.beginPath();
+      ctx.ellipse(-11, -17, 3, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Left cup orange accent (logo)
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.arc(-11, -17, 1.5, 0, Math.PI * 2);
+      ctx.fill();
       
-      // Earrings
-      ctx.fillStyle = "#d4af37";
-      ctx.fillRect(-10 + facing * -1, -15, 1, 2);
-      ctx.fillRect(9 + facing * -1, -15, 1, 2);
+      // Right ear cup
+      ctx.fillStyle = "#1a1a1a";
+      ctx.beginPath();
+      ctx.ellipse(11, -17, 4, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#0a0a0a";
+      ctx.beginPath();
+      ctx.ellipse(11, -17, 3, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f97316";
+      ctx.beginPath();
+      ctx.arc(11, -17, 1.5, 0, Math.PI * 2);
+      ctx.fill();
       
       ctx.restore();
+
+      // ── DRIBBLE BALL (when player is idle, not shooting, no shot in air) ──
+      if (!isMoving && !isShoot && !game.current.shotBall) {
+        const db = game.current.player.dribbleBall;
+        // Physics: bouncing between hand height and ground
+        db.vy += 0.5;
+        db.y += db.vy;
+        // Ground bounce
+        if (db.y > 540) {
+          db.y = 540;
+          db.vy = -7;
+        }
+        // Hand catch (top of bounce)
+        if (db.y < 510 && db.vy < 0) {
+          db.vy *= 0.95; // slight catch friction
+        }
+        // Position next to player on the facing side
+        const dbX = px + 18 * (facing || 1);
+        // Shadow
+        const dbHeight = 555 - db.y;
+        const dbShadowAlpha = Math.max(0.05, 0.35 - dbHeight / 800);
+        ctx.fillStyle = `rgba(0, 0, 0, ${dbShadowAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(dbX, 555, Math.max(3, 8 - dbHeight / 40), 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Ball
+        ctx.save();
+        ctx.translate(dbX, db.y);
+        ctx.rotate((F * 0.2) % (Math.PI * 2));
+        const dbGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, 9);
+        dbGrad.addColorStop(0, "#e76d1f");
+        dbGrad.addColorStop(0.7, "#cc5500");
+        dbGrad.addColorStop(1, "#8a3800");
+        ctx.fillStyle = dbGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#1a0a00";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, 9, -Math.PI/2 - 0.3, Math.PI/2 + 0.3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-9, 0);
+        ctx.lineTo(9, 0);
+        ctx.stroke();
+        ctx.restore();
+        // Play subtle dribble sound on bounce
+        if (db.y === 540 && db.vy === -7 && F % 5 === 0) {
+          playSound("bounce_soft");
+        }
+      } else {
+        // Reset dribble ball when not idle
+        game.current.player.dribbleBall.y = 540;
+        game.current.player.dribbleBall.vy = 0;
+      }
 
       // Catch zone indicator (matches shoot logic: 40px wide, 80px tall around y=480)
       ctx.fillStyle = "rgba(249, 115, 22, 0.08)";
