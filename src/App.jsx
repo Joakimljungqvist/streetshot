@@ -583,6 +583,240 @@ export default function App() {
         ctx.fillRect(px2 - 1, 285, 3, 175);
       });
       
+      // ── PEOPLE IN WINDOWS (silhouettes) ──
+      // Some windows have people silhouettes visible
+      const peopleWindows = [
+        { bx: 0, row: 0, col: 1 },   // Person looking out
+        { bx: 1, row: 1, col: 0 },
+        { bx: 2, row: 0, col: 2 },
+        { bx: 3, row: 2, col: 1 },
+        { bx: 4, row: 1, col: 2 },
+      ];
+      peopleWindows.forEach(({ bx, row, col }) => {
+        const wx = (bx * 85 - 5) + 12 + col * 22;
+        const wy = 178 + row * 28;
+        // Head silhouette
+        ctx.fillStyle = "rgba(20, 10, 5, 0.85)";
+        ctx.beginPath();
+        ctx.arc(wx + 6, wy + 7, 3, 0, Math.PI * 2);
+        ctx.fill();
+        // Shoulders
+        ctx.fillRect(wx + 3, wy + 10, 6, 7);
+      });
+      // Subtle movement - one person waving
+      const waveFrame = Math.sin(F * 0.1);
+      if (waveFrame > 0) {
+        const wpx = (0 * 85 - 5) + 12 + 1 * 22 + 6;
+        const wpy = 178 + 0 * 28 + 7;
+        ctx.fillStyle = "rgba(20, 10, 5, 0.7)";
+        ctx.fillRect(wpx - 4, wpy - 2 - waveFrame * 2, 2, 4);
+      }
+      
+      // ── YELLOW TAXI CABS in distance ──
+      // Two taxis driving past at different speeds
+      const taxi1X = ((F * 1.2) % (W + 100)) - 50;
+      const taxi2X = W - ((F * 0.8 + 250) % (W + 100));
+      
+      const drawTaxi = (tx, ty, dir) => {
+        ctx.save();
+        // Taxi body (yellow)
+        ctx.fillStyle = "#facc15";
+        ctx.fillRect(tx, ty, 28, 10);
+        // Roof
+        ctx.fillRect(tx + 5, ty - 5, 18, 5);
+        // Black bottom strip
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(tx, ty + 8, 28, 2);
+        // Windows (gray-blue)
+        ctx.fillStyle = "rgba(100, 130, 160, 0.6)";
+        ctx.fillRect(tx + 6, ty - 4, 16, 4);
+        // Window separator
+        ctx.fillStyle = "#1a1a1a";
+        ctx.fillRect(tx + 13, ty - 4, 1, 4);
+        // Wheels
+        ctx.fillStyle = "#0a0a0a";
+        ctx.beginPath();
+        ctx.arc(tx + 6, ty + 11, 2.5, 0, Math.PI * 2);
+        ctx.arc(tx + 22, ty + 11, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Hub caps
+        ctx.fillStyle = "#666";
+        ctx.beginPath();
+        ctx.arc(tx + 6, ty + 11, 1, 0, Math.PI * 2);
+        ctx.arc(tx + 22, ty + 11, 1, 0, Math.PI * 2);
+        ctx.fill();
+        // Headlight (only on front)
+        ctx.fillStyle = "rgba(255, 240, 180, 0.9)";
+        if (dir > 0) {
+          ctx.fillRect(tx + 26, ty + 3, 2, 3);
+        } else {
+          ctx.fillRect(tx, ty + 3, 2, 3);
+        }
+        // Side stripe (NYC taxi style)
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.fillRect(tx, ty + 5, 28, 1);
+        // TAXI text
+        ctx.fillStyle = "#1a1a1a";
+        ctx.font = "bold 3px sans-serif";
+        ctx.fillText("TAXI", tx + 14, ty + 4);
+        ctx.restore();
+      };
+      // Taxi 1 - moving right behind fence
+      if (taxi1X > -40 && taxi1X < W) {
+        drawTaxi(taxi1X, 268, 1);
+      }
+      // Taxi 2 - moving left at slightly different height
+      if (taxi2X > -40 && taxi2X < W) {
+        drawTaxi(taxi2X, 273, -1);
+      }
+      
+      // ── MORE TREES (urban planters) ──
+      const drawTree = (tx, ty, size, type) => {
+        // Trunk
+        ctx.fillStyle = "#3a2818";
+        ctx.fillRect(tx - 2, ty, 4, size * 0.4);
+        // Foliage
+        const foliage = ctx.createRadialGradient(tx, ty - size*0.3, 5, tx, ty - size*0.3, size);
+        if (type === "dark") {
+          foliage.addColorStop(0, "#4a7028");
+          foliage.addColorStop(1, "#1f3a0f");
+        } else {
+          foliage.addColorStop(0, "#6aa040");
+          foliage.addColorStop(1, "#2a4a1a");
+        }
+        ctx.fillStyle = foliage;
+        ctx.beginPath();
+        ctx.arc(tx - size*0.4, ty - size*0.2, size * 0.5, 0, Math.PI * 2);
+        ctx.arc(tx + size*0.4, ty - size*0.2, size * 0.5, 0, Math.PI * 2);
+        ctx.arc(tx, ty - size*0.5, size * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      // Original trees plus more
+      drawTree(60, 290, 20, "light");
+      drawTree(W - 60, 290, 22, "dark");
+      // Extra small trees behind
+      drawTree(135, 285, 14, "dark");
+      drawTree(265, 287, 16, "light");
+      // Tree planters (concrete)
+      ctx.fillStyle = "#666";
+      ctx.fillRect(54, 296, 12, 6);
+      ctx.fillRect(W - 66, 296, 12, 6);
+      ctx.fillStyle = "#555";
+      ctx.fillRect(130, 291, 10, 5);
+      ctx.fillRect(260, 293, 10, 5);
+      
+      // Bush/plants on the side
+      ctx.fillStyle = "#3a5a1a";
+      ctx.beginPath();
+      ctx.arc(20, 305, 8, 0, Math.PI * 2);
+      ctx.arc(28, 308, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#4a6a2a";
+      ctx.beginPath();
+      ctx.arc(W - 25, 305, 8, 0, Math.PI * 2);
+      ctx.arc(W - 33, 308, 7, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // ── SITTING SPECTATOR (cheering by court edge) ──
+      // Person sitting on the left side of court, cheering occasionally
+      const cheerCycle = Math.sin(F * 0.04);
+      const isCheering = cheerCycle > 0.5;
+      const specX = 25;
+      const specY = 445;
+      
+      // Sitting body (legs out)
+      ctx.fillStyle = "#1a3a5a"; // Jeans
+      ctx.fillRect(specX - 1, specY + 8, 12, 5);
+      ctx.fillRect(specX - 1, specY + 12, 6, 4);
+      // Shoes
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(specX + 9, specY + 11, 4, 3);
+      ctx.fillRect(specX + 3, specY + 14, 4, 2);
+      // Shirt (red hoodie)
+      ctx.fillStyle = "#dc2626";
+      ctx.fillRect(specX - 2, specY + 1, 9, 9);
+      // Arms (raised when cheering!)
+      ctx.fillStyle = "#dc2626";
+      if (isCheering) {
+        // Both arms raised
+        ctx.fillRect(specX - 4, specY - 5, 3, 9);
+        ctx.fillRect(specX + 6, specY - 5, 3, 9);
+        // Hands up
+        ctx.fillStyle = "#b8835a";
+        ctx.beginPath();
+        ctx.arc(specX - 3, specY - 6, 2, 0, Math.PI * 2);
+        ctx.arc(specX + 7, specY - 6, 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Arms relaxed
+        ctx.fillRect(specX - 3, specY + 2, 2, 8);
+        ctx.fillRect(specX + 6, specY + 2, 2, 8);
+        ctx.fillStyle = "#b8835a";
+        ctx.beginPath();
+        ctx.arc(specX - 2, specY + 10, 2, 0, Math.PI * 2);
+        ctx.arc(specX + 7, specY + 10, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Head
+      ctx.fillStyle = "#b8835a";
+      ctx.beginPath();
+      ctx.arc(specX + 2.5, specY - 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Hair
+      ctx.fillStyle = "#3a2010";
+      ctx.beginPath();
+      ctx.arc(specX + 2.5, specY - 4, 4, Math.PI, 0);
+      ctx.fill();
+      
+      // "GO!" speech bubble when cheering
+      if (isCheering && Math.sin(F * 0.04) > 0.7) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+        ctx.beginPath();
+        ctx.roundRect(specX + 12, specY - 18, 22, 12, 4);
+        ctx.fill();
+        ctx.fillStyle = "#dc2626";
+        ctx.font = "bold 9px sans-serif";
+        ctx.fillText("GO!", specX + 16, specY - 9);
+      }
+      
+      // ── SECOND SPECTATOR (right side, sitting on bench) ──
+      const spec2X = W - 32;
+      const spec2Y = 445;
+      // Bench
+      ctx.fillStyle = "#5a3a20";
+      ctx.fillRect(spec2X - 5, spec2Y + 10, 18, 3);
+      ctx.fillRect(spec2X - 3, spec2Y + 13, 2, 5);
+      ctx.fillRect(spec2X + 11, spec2Y + 13, 2, 5);
+      // Body (sitting, blue jacket)
+      ctx.fillStyle = "#2563eb";
+      ctx.fillRect(spec2X - 1, spec2Y + 1, 9, 10);
+      // Pants
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(spec2X - 1, spec2Y + 9, 4, 5);
+      ctx.fillRect(spec2X + 4, spec2Y + 9, 4, 5);
+      // Arms - holding phone (gaming probably!)
+      ctx.fillStyle = "#2563eb";
+      ctx.fillRect(spec2X - 2, spec2Y + 3, 3, 6);
+      ctx.fillRect(spec2X + 7, spec2Y + 3, 3, 6);
+      // Phone in hands
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(spec2X + 2, spec2Y + 5, 4, 3);
+      // Phone screen glow
+      ctx.fillStyle = "rgba(100, 180, 255, 0.8)";
+      ctx.fillRect(spec2X + 2.5, spec2Y + 5.5, 3, 2);
+      // Head
+      ctx.fillStyle = "#c8956a";
+      ctx.beginPath();
+      ctx.arc(spec2X + 3.5, spec2Y - 2, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Hair (blonde)
+      ctx.fillStyle = "#d4a050";
+      ctx.beginPath();
+      ctx.arc(spec2X + 3.5, spec2Y - 4, 4, Math.PI, 0);
+      ctx.fill();
+      // Ponytail
+      ctx.fillRect(spec2X + 6, spec2Y - 3, 2, 4);
+      
       // Street lamp posts (subtle on each side)
       ctx.fillStyle = "#1a1a1a";
       // Left lamp
