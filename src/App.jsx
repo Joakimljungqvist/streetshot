@@ -22,6 +22,7 @@ export default function App() {
   const [started, setStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const shootHoldRef = useRef({ holding: false, startTime: 0 });
 
   const game = useRef({
     player: { x: 200, y: 500, facing: 0, walkCycle: 0, shootAnim: 0, dribbleBall: { y: 540, vy: 0, side: 1 } },
@@ -84,10 +85,10 @@ export default function App() {
         // Louder, more bassy ball bounce
         osc.frequency.value = 180;
         osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.25, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
         osc.start();
-        osc.stop(ctx.currentTime + 0.12);
+        osc.stop(ctx.currentTime + 0.15);
       }
     } catch(e) {}
   };
@@ -120,7 +121,7 @@ export default function App() {
     game.current.shakeAmount = 0;
   };
 
-  const shoot = () => {
+  const shoot = (power = 1) => {
     if (game.current.shotBall) return;
     const px = game.current.player.x;
     let caughtIdx = -1;
@@ -129,7 +130,6 @@ export default function App() {
       const b = game.current.fallingBalls[i];
       const dx = Math.abs(b.x - px);
       const dy = Math.abs(b.y - 480);
-      // Catch zone: horizontal 40px, vertical 80px around player
       if (dx < 40 && dy < 80) {
         const dist = Math.sqrt(dx*dx + dy*dy);
         if (dist < closestDist) {
@@ -145,12 +145,30 @@ export default function App() {
     const dx = hx - px;
     const dy = hy - 480;
     const gravity = 0.3;
-    const time = 35;
+    // Power: 0.75 = quick low shot, 1.0 = normal, 1.35 = high lob
+    const time = 30 * power;
     const vx = dx / time;
     const vy = (dy - 0.5 * gravity * time * time) / time;
     game.current.shotBall = { x: px, y: 460, vx, vy };
-    game.current.player.shootAnim = 20; // 20 frames of shoot animation
+    game.current.player.shootAnim = 20;
     playSound("catch");
+  };
+  
+  // Touch/click handlers with hold-to-charge
+  const handlePressStart = () => {
+    shootHoldRef.current.holding = true;
+    shootHoldRef.current.startTime = Date.now();
+  };
+  const handlePressEnd = () => {
+    if (!shootHoldRef.current.holding) return;
+    const holdDuration = Date.now() - shootHoldRef.current.startTime;
+    shootHoldRef.current.holding = false;
+    // 0-120ms = quick tap (power 0.75), 120-350ms = normal, 350+ = strong
+    let power = 1.0;
+    if (holdDuration < 120) power = 0.75;
+    else if (holdDuration > 350) power = 1.35;
+    else power = 0.75 + (holdDuration - 120) / 230 * 0.6;
+    shoot(power);
   };
 
   // Save highscore whenever gameOver becomes true
@@ -181,15 +199,19 @@ export default function App() {
     const handleKeyDown = (e) => {
       if (e.key === "ArrowLeft" || e.key === "a") game.current.keys.left = true;
       if (e.key === "ArrowRight" || e.key === "d") game.current.keys.right = true;
-      if (e.key === " ") {
+      if (e.key === " " && !e.repeat) {
         e.preventDefault();
-        if (started) shoot();
+        if (started) handlePressStart();
         else if (!gameOver) startGame();
       }
     };
     const handleKeyUp = (e) => {
       if (e.key === "ArrowLeft" || e.key === "a") game.current.keys.left = false;
       if (e.key === "ArrowRight" || e.key === "d") game.current.keys.right = false;
+      if (e.key === " " && started) {
+        e.preventDefault();
+        handlePressEnd();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -1001,7 +1023,7 @@ export default function App() {
           b.y = 540;
           // Cap the incoming velocity before bouncing
           const cappedVy = Math.min(Math.abs(b.vy), 4.5);
-          b.vy = -cappedVy * 0.5;
+          b.vy = -cappedVy * 0.6;
           b.vx *= 0.85;
           // Bounce sound (volume scales with impact)
           if (Math.abs(cappedVy) > 1.5) {
@@ -1692,7 +1714,7 @@ export default function App() {
       }
       // Move hoop vertically
       game.current.hoop.y += game.current.hoop.ydir * game.current.hoop.yspeed;
-      if (game.current.hoop.y > 180 || game.current.hoop.y < 70) {
+      if (game.current.hoop.y > 260 || game.current.hoop.y < 70) {
         game.current.hoop.ydir *= -1;
       }
       
@@ -1866,7 +1888,12 @@ export default function App() {
               }}>x{combo}</div></div>
             </div>
 
-            <canvas ref={canvasRef} width={W} height={H} onClick={shoot} style={S.canvas}/>
+            <canvas ref={canvasRef} width={W} height={H}
+              onMouseDown={handlePressStart}
+              onMouseUp={handlePressEnd}
+              onTouchStart={(e)=>{ e.preventDefault(); handlePressStart(); }}
+              onTouchEnd={(e)=>{ e.preventDefault(); handlePressEnd(); }}
+              style={S.canvas}/>
 
             {feedback && <div style={{...S.feedback, color: feedback.color}}>{feedback.text}</div>}
 
@@ -1878,7 +1905,13 @@ export default function App() {
                 onMouseUp={()=>game.current.keys.left=false}
                 onMouseLeave={()=>game.current.keys.left=false}
                 style={S.moveBtn}>◀</button>
-              <button onClick={shoot} onTouchStart={(e)=>{ e.preventDefault(); shoot(); }} style={S.shootBtn}>🏀</button>
+              <button
+                onMouseDown={handlePressStart}
+                onMouseUp={handlePressEnd}
+                onMouseLeave={handlePressEnd}
+                onTouchStart={(e)=>{ e.preventDefault(); handlePressStart(); }}
+                onTouchEnd={(e)=>{ e.preventDefault(); handlePressEnd(); }}
+                style={S.shootBtn}>🏀</button>
               <button
                 onTouchStart={(e)=>{ e.preventDefault(); game.current.keys.right=true; }}
                 onTouchEnd={(e)=>{ e.preventDefault(); game.current.keys.right=false; }}
