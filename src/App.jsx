@@ -81,11 +81,13 @@ export default function App() {
         osc.start();
         osc.stop(ctx.currentTime + 0.15);
       } else if (type === "bounce_soft") {
-        osc.frequency.value = 250;
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+        // Louder, more bassy ball bounce
+        osc.frequency.value = 180;
+        osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
         osc.start();
-        osc.stop(ctx.currentTime + 0.06);
+        osc.stop(ctx.currentTime + 0.12);
       }
     } catch(e) {}
   };
@@ -1450,60 +1452,29 @@ export default function App() {
       
       ctx.restore();
 
-      // ── DRIBBLE BALL (when player is idle, not shooting, no shot in air) ──
-      if (!isMoving && !isShoot && !game.current.shotBall) {
-        const db = game.current.player.dribbleBall;
-        // Physics: bouncing between hand height and ground
-        db.vy += 0.5;
-        db.y += db.vy;
-        // Ground bounce
-        if (db.y > 540) {
-          db.y = 540;
-          db.vy = -7;
+      // ── DRIBBLE BALL (when player is idle, spawn a low-bouncing ball next to player) ──
+      const isIdleNow = !isMoving && !isShoot;
+      // Check if there's already a "dribble ball" near the player
+      let hasDribbleBall = false;
+      for (let i = 0; i < game.current.fallingBalls.length; i++) {
+        const b = game.current.fallingBalls[i];
+        if (b.isDribble && Math.abs(b.x - px) < 30) {
+          hasDribbleBall = true;
+          break;
         }
-        // Hand catch (top of bounce)
-        if (db.y < 510 && db.vy < 0) {
-          db.vy *= 0.95; // slight catch friction
-        }
-        // Position next to player on the facing side
-        const dbX = px + 18 * (facing || 1);
-        // Shadow
-        const dbHeight = 555 - db.y;
-        const dbShadowAlpha = Math.max(0.05, 0.35 - dbHeight / 800);
-        ctx.fillStyle = `rgba(0, 0, 0, ${dbShadowAlpha})`;
-        ctx.beginPath();
-        ctx.ellipse(dbX, 555, Math.max(3, 8 - dbHeight / 40), 1.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Ball
-        ctx.save();
-        ctx.translate(dbX, db.y);
-        ctx.rotate((F * 0.2) % (Math.PI * 2));
-        const dbGrad = ctx.createRadialGradient(-3, -3, 2, 0, 0, 9);
-        dbGrad.addColorStop(0, "#e76d1f");
-        dbGrad.addColorStop(0.7, "#cc5500");
-        dbGrad.addColorStop(1, "#8a3800");
-        ctx.fillStyle = dbGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#1a0a00";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(0, 0, 9, -Math.PI/2 - 0.3, Math.PI/2 + 0.3);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(-9, 0);
-        ctx.lineTo(9, 0);
-        ctx.stroke();
-        ctx.restore();
-        // Play subtle dribble sound on bounce
-        if (db.y === 540 && db.vy === -7 && F % 5 === 0) {
-          playSound("bounce_soft");
-        }
-      } else {
-        // Reset dribble ball when not idle
-        game.current.player.dribbleBall.y = 540;
-        game.current.player.dribbleBall.vy = 0;
+      }
+      // Spawn a dribble ball if idle and no existing one nearby
+      if (isIdleNow && !hasDribbleBall && !game.current.shotBall && F % 60 === 0) {
+        const side = facing || 1;
+        game.current.fallingBalls.push({
+          x: px + 18 * side,
+          y: 540,
+          vx: 0,
+          vy: -3.5,
+          rot: 0,
+          rotSpeed: 0.15,
+          isDribble: true, // marker for visual purposes
+        });
       }
 
       // Catch zone indicator (matches shoot logic: 40px wide, 80px tall around y=480)
