@@ -22,8 +22,6 @@ export default function App() {
   const [started, setStarted] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [musicOn, setMusicOn] = useState(true);
-  const musicCtxRef = useRef(null);
 
   const game = useRef({
     player: { x: 200, y: 500, facing: 0, walkCycle: 0, shootAnim: 0, dribbleBall: { y: 540, vy: 0, side: 1 } },
@@ -78,99 +76,19 @@ export default function App() {
         osc.stop(ctx.currentTime + 0.1);
       } else if (type === "drop") {
         osc.frequency.value = 100;
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
         osc.start();
         osc.stop(ctx.currentTime + 0.15);
       } else if (type === "bounce_soft") {
         osc.frequency.value = 250;
-        gain.gain.setValueAtTime(0.015, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
         osc.start();
-        osc.stop(ctx.currentTime + 0.05);
+        osc.stop(ctx.currentTime + 0.06);
       }
     } catch(e) {}
   };
-
-  // Lo-fi background music (chill chord loop)
-  useEffect(() => {
-    if (!started || !musicOn) {
-      if (musicCtxRef.current) {
-        try { musicCtxRef.current.close(); } catch(e) {}
-        musicCtxRef.current = null;
-      }
-      return;
-    }
-    
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    musicCtxRef.current = ctx;
-    const masterGain = ctx.createGain();
-    masterGain.gain.value = 0.06;
-    masterGain.connect(ctx.destination);
-    
-    const chords = [
-      [220.00, 261.63, 329.63],
-      [164.81, 196.00, 246.94],
-      [174.61, 220.00, 261.63],
-      [130.81, 164.81, 196.00],
-    ];
-    const bass = [110, 82.4, 87.3, 65.4];
-    
-    let chordIdx = 0;
-    let stopped = false;
-    let timeoutId = null;
-    
-    const playChord = () => {
-      if (stopped || ctx.state === "closed") return;
-      const now = ctx.currentTime;
-      const chord = chords[chordIdx % chords.length];
-      const bassNote = bass[chordIdx % bass.length];
-      
-      chord.forEach((freq) => {
-        try {
-          const osc = ctx.createOscillator();
-          const g = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.value = freq;
-          osc.connect(g);
-          g.connect(masterGain);
-          g.gain.setValueAtTime(0, now);
-          g.gain.linearRampToValueAtTime(0.3, now + 0.5);
-          g.gain.linearRampToValueAtTime(0.2, now + 3);
-          g.gain.linearRampToValueAtTime(0, now + 3.8);
-          osc.start(now);
-          osc.stop(now + 4);
-        } catch(e) {}
-      });
-      
-      try {
-        const bassOsc = ctx.createOscillator();
-        const bassG = ctx.createGain();
-        bassOsc.type = "triangle";
-        bassOsc.frequency.value = bassNote;
-        bassOsc.connect(bassG);
-        bassG.connect(masterGain);
-        bassG.gain.setValueAtTime(0, now);
-        bassG.gain.linearRampToValueAtTime(0.4, now + 0.1);
-        bassG.gain.linearRampToValueAtTime(0.3, now + 1);
-        bassG.gain.linearRampToValueAtTime(0, now + 1.8);
-        bassOsc.start(now);
-        bassOsc.stop(now + 2);
-      } catch(e) {}
-      
-      chordIdx++;
-      timeoutId = setTimeout(playChord, 3800);
-    };
-    
-    playChord();
-    
-    return () => {
-      stopped = true;
-      if (timeoutId) clearTimeout(timeoutId);
-      try { ctx.close(); } catch(e) {}
-      musicCtxRef.current = null;
-    };
-  }, [started, musicOn]);
 
   const startGame = () => {
     setScore(0);
@@ -233,6 +151,14 @@ export default function App() {
     playSound("catch");
   };
 
+  // Save highscore whenever gameOver becomes true
+  useEffect(() => {
+    if (gameOver && score > highscore) {
+      setHighscore(score);
+      try { localStorage.setItem("streetshot_hs", String(score)); } catch(e) {}
+    }
+  }, [gameOver, score, highscore]);
+
   // Countdown timer - 90 sec base + bonus at milestones
   useEffect(()=>{
     if (!started || gameOver) return;
@@ -241,16 +167,6 @@ export default function App() {
         if (prev <= 1) {
           setGameOver(true);
           setStarted(false);
-          setScore(currScore => {
-            setHighscore(hs => {
-              if (currScore > hs) {
-                try { localStorage.setItem("streetshot_hs", String(currScore)); } catch(e) {}
-                return currScore;
-              }
-              return hs;
-            });
-            return currScore;
-          });
           return 0;
         }
         return prev - 1;
@@ -1100,10 +1016,14 @@ export default function App() {
         // Bounce off ground - capped bounce so balls don't fly to ceiling
         if (b.y > 540) {
           b.y = 540;
-          // Cap the incoming velocity before bouncing to prevent ceiling shots
+          // Cap the incoming velocity before bouncing
           const cappedVy = Math.min(Math.abs(b.vy), 4.5);
           b.vy = -cappedVy * 0.5;
           b.vx *= 0.85;
+          // Bounce sound (volume scales with impact)
+          if (Math.abs(cappedVy) > 1.5) {
+            playSound("bounce_soft");
+          }
           if (Math.abs(b.vy) < 1.2) {
             // Ball lost energy, count as miss and remove
             game.current.fallingBalls.splice(i, 1);
@@ -1959,21 +1879,6 @@ export default function App() {
               <div style={S.hsValue}>{highscore}</div>
             </div>
             <button onClick={startGame} style={S.playBtn}>▶ TAP TO PLAY</button>
-            <button
-              onClick={() => setMusicOn(m => !m)}
-              style={{
-                background: "rgba(0,0,0,0.3)",
-                border: "1px solid #444",
-                color: musicOn ? "#f97316" : "#666",
-                fontSize: 13,
-                padding: "8px 16px",
-                borderRadius: 4,
-                cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif",
-                fontWeight: 700,
-                letterSpacing: 1,
-              }}
-            >{musicOn ? "🎵 MUSIK PÅ" : "🔇 MUSIK AV"}</button>
             <div style={S.tagline}>90 sek! +15s per 5 poäng. SWISH = 3p, RIM = 1p.</div>
           </div>
         )}
@@ -2010,26 +1915,6 @@ export default function App() {
             </div>
 
             <canvas ref={canvasRef} width={W} height={H} onClick={shoot} style={S.canvas}/>
-
-            {/* Music toggle */}
-            <button
-              onClick={() => setMusicOn(m => !m)}
-              style={{
-                position: "absolute",
-                top: 8,
-                right: 8,
-                background: "rgba(0,0,0,0.5)",
-                border: "1px solid #444",
-                color: musicOn ? "#f97316" : "#666",
-                fontSize: 18,
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                cursor: "pointer",
-                zIndex: 5,
-              }}
-              title={musicOn ? "Stäng av musik" : "Sätt på musik"}
-            >{musicOn ? "🎵" : "🔇"}</button>
 
             {feedback && <div style={{...S.feedback, color: feedback.color}}>{feedback.text}</div>}
 
