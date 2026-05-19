@@ -407,25 +407,6 @@ export default function App() {
         }
       });
       
-      // Trees behind fence (urban park trees)
-      const drawTree = (tx, ty, size) => {
-        // Trunk
-        ctx.fillStyle = "#3a2818";
-        ctx.fillRect(tx - 2, ty, 4, size * 0.4);
-        // Foliage (multiple circles)
-        const foliage = ctx.createRadialGradient(tx, ty - size*0.3, 5, tx, ty - size*0.3, size);
-        foliage.addColorStop(0, "#5a8c3a");
-        foliage.addColorStop(1, "#2a4a1a");
-        ctx.fillStyle = foliage;
-        ctx.beginPath();
-        ctx.arc(tx - size*0.4, ty - size*0.2, size * 0.5, 0, Math.PI * 2);
-        ctx.arc(tx + size*0.4, ty - size*0.2, size * 0.5, 0, Math.PI * 2);
-        ctx.arc(tx, ty - size*0.5, size * 0.55, 0, Math.PI * 2);
-        ctx.fill();
-      };
-      drawTree(60, 290, 20);
-      drawTree(W - 60, 290, 22);
-      
       // Graffiti on building walls (more colorful)
       ctx.fillStyle = "#dc2626";
       ctx.font = "bold italic 20px sans-serif";
